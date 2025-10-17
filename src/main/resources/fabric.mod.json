@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "emotive",
+  "version": "${version}",
+  "name": "emotive",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/emotive/icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "com.cobblemonislands.emotive.Emotive"
+    ]
+  },
+  "mixins": [
+    "emotive.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
