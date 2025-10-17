@@ -18,7 +18,7 @@ import static net.minecraft.commands.Commands.literal;
 public class EmotiveCommand {
 
     public static void register(com.mojang.brigadier.CommandDispatcher<CommandSourceStack> dispatcher) {
-        List<String> animations = List.of("win", "wave");
+        List<String> animations = List.of("send_out", "recall", "lose", "win");
 
         SuggestionProvider<CommandSourceStack> animationSuggestions = (context, builder) -> {
             String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);

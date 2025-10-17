@@ -4,6 +4,7 @@
   "package": "com.cobblemonislands.emotive.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "EntityAccessor",
     "LivingEntityMixin",
     "ServerGamePacketListenerImplMixin"
   ],
