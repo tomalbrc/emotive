@@ -7,6 +7,7 @@ import com.cobblemon.mod.common.api.npc.NPCClasses;
 import com.cobblemon.mod.common.entity.npc.NPCEntity;
 import com.cobblemon.mod.common.entity.npc.NPCPlayerModelType;
 import com.cobblemon.mod.common.entity.npc.NPCPlayerTexture;
+import com.cobblemonislands.emotive.config.ModConfig;
 import com.cobblemonislands.emotive.mixin.EntityAccessor;
 import com.google.common.collect.ImmutableList;
 import com.mojang.authlib.GameProfile;
@@ -124,6 +125,9 @@ public class GestureController {
     }
 
     public static void onStart(ServerPlayer player, String animationName) {
+        if (GestureController.GESTURE_CAMS.containsKey(player.getUUID())) // prevent spamming gestures
+            return;
+
         // destroy any previous gestures
         GestureCameraHolder camera = GestureController.GESTURE_CAMS.get(player.getUUID());
         if (camera != null) {
@@ -136,7 +140,7 @@ public class GestureController {
         playerModel.noPhysics = true;
         playerModel.setNoGravity(true);
         playerModel.setInvulnerable(true);
-        playerModel.setNpc(Objects.requireNonNull(NPCClasses.INSTANCE.getByName("standard")));
+        playerModel.setNpc(Objects.requireNonNull(NPCClasses.INSTANCE.getByName(ModConfig.getInstance().npcClass)));
         playerModel.moveTo(player.position(), player.yHeadRot, player.getXRot());
 
         playerModel.setYHeadRot(player.yHeadRot);

@@ -8,6 +8,8 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 
 public class Emotive implements ModInitializer {
 
+    public static final String MODID = "emotive";
+
     @Override
     public void onInitialize() {
         ServerPlayConnectionEvents.JOIN.register((serverGamePacketListener, packetSender, minecraftServer) -> GestureController.onConnect(serverGamePacketListener.player));
