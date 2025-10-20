@@ -1,86 +1,244 @@
 package com.cobblemonislands.emotive.command;
 
+import com.cobblemonislands.emotive.config.Animations;
 import com.cobblemonislands.emotive.config.ConfiguredAnimation;
 import com.cobblemonislands.emotive.config.ModConfig;
 import com.cobblemonislands.emotive.gui.EmoteSelectionGui;
 import com.cobblemonislands.emotive.impl.GestureController;
+import com.cobblemonislands.emotive.storage.LPStorage;
+import com.cobblemonislands.emotive.util.TextUtil;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.mojang.datafixers.util.Pair;
 import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.inventory.MenuType;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
-public class EmotiveCommand {
+public final class EmotiveCommand {
+    private EmotiveCommand() {}
+
     public static void register(com.mojang.brigadier.CommandDispatcher<CommandSourceStack> dispatcher) {
+        final ModConfig config = ModConfig.getInstance();
 
-        SuggestionProvider<CommandSourceStack> animationSuggestions = (context, builder) -> {
-            String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);
-            for (Map.Entry<ResourceLocation, ConfiguredAnimation> anim : ModConfig.getInstance().animations.entrySet()) {
-                var animation = anim.getValue();
-                var id = anim.getKey();
+        SuggestionProvider<CommandSourceStack> animationSuggestions =  (context, builder) -> {
+            final String rem = builder.getRemaining().toLowerCase(Locale.ROOT);
 
-                String animationKey = animation.permission(id);
+            for (Map.Entry<ResourceLocation, ConfiguredAnimation> entry : Animations.all().entrySet()) {
+                final ResourceLocation id = entry.getKey();
+                final ConfiguredAnimation animation = entry.getValue();
 
-                var player = context.getSource().getPlayer();
+                final ServerPlayer sourcePlayer = context.getSource().getPlayer();
+                final boolean hasAccess = (sourcePlayer == null)
+                        || sourcePlayer.hasPermissions(4)
+                        || LPStorage.owns(sourcePlayer, id);
 
-                if ((player == null || Permissions.check(player, animationKey, 2)) && animation.animationName().toLowerCase(Locale.ROOT).startsWith(remaining)) {
+                if (!hasAccess) continue;
+
+                final String nameLower = animation.animationName().toLowerCase(Locale.ROOT);
+                final String idPath = id.getPath().toLowerCase(Locale.ROOT);
+
+                if (nameLower.startsWith(rem) || idPath.startsWith(rem)) {
                     builder.suggest(id.getPath());
                 }
             }
+
             return builder.buildFuture();
         };
 
-        var rootPerm = Permissions.require("emotive.command", ModConfig.getInstance().permissions.getOrDefault("emotive.command", 2));
+        final Function<String, Predicate<CommandSourceStack>> requirePerm = (permKey) ->
+                Permissions.require(permKey, config.permissions.getOrDefault(permKey, 2));
 
-        var root = literal(ModConfig.getInstance().command).requires(rootPerm).executes(ctx -> {
-            ServerPlayer player = ctx.getSource().getPlayer();
-            if (player != null) {
-                EmoteSelectionGui gui = new EmoteSelectionGui(MenuType.GENERIC_9x6, player, false);
-                gui.open();
+        var root = literal(config.command)
+                .requires(requirePerm.apply("emotive.command"))
+                .executes(EmotiveCommand::openGui);
+
+        // /<cmd> reload
+        root = root.then(literal("reload")
+                .requires(requirePerm.apply("emotive.reload"))
+                .executes(ctx -> {
+                    ModConfig.load();
+                    ctx.getSource().sendSuccess(() -> TextUtil.parse(ModConfig.getInstance().messages.configReloaded), false);
+                    return Command.SINGLE_SUCCESS;
+                }));
+
+        // /<cmd> give <player> <emote>
+        root = root.then(literal("give")
+                .requires(requirePerm.apply("emotive.give"))
+                .then(argument("player", EntityArgument.player())
+                        .then(literal("*").executes(EmotiveCommand::handleAddAll))
+                        .then(argument("emote", StringArgumentType.word()).suggests(animationSuggestions)
+                                .executes(EmotiveCommand::handleAdd))));
+
+        // /<cmd> remove <player> <emote>
+        root = root.then(literal("remove")
+                .requires(requirePerm.apply("emotive.remove"))
+                .then(argument("player", EntityArgument.player())
+                        .then(literal("*").executes(EmotiveCommand::handleRemoveAll))
+                        .then(argument("emote", StringArgumentType.word()).suggests(animationSuggestions)
+                                .executes(EmotiveCommand::handleRemove))));
+
+        // /<cmd> list <player>
+        root = root.then(literal("list")
+                .requires(requirePerm.apply("emotive.list"))
+                .then(argument("player", EntityArgument.player())
+                        .executes(EmotiveCommand::handleList)));
+
+        // run emote directly: /<cmd> <emote>
+        dispatcher.register(root.then(argument("emote", StringArgumentType.word())
+                .requires(requirePerm.apply("emotive.direct"))
+                .suggests(animationSuggestions)
+                .executes(EmotiveCommand::executeEmote)));
+    }
+
+    private static int openGui(CommandContext<CommandSourceStack> ctx) {
+        final ServerPlayer player = ctx.getSource().getPlayer();
+        if (player == null) return 0;
+
+        final EmoteSelectionGui gui = new EmoteSelectionGui(player, false);
+        gui.open();
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int handleAddAll(CommandContext<CommandSourceStack> ctx) {
+        try {
+            final ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
+            int added = (int) Animations.all().keySet().stream().filter(name -> LPStorage.add(player, name)).count();
+            ctx.getSource().sendSuccess(() -> Component.literal(String.format("Successfully added %d emotes to %s", added, player.getScoreboardName())), false);
+        } catch (CommandSyntaxException e) {
+            ctx.getSource().sendFailure(TextUtil.parse(ModConfig.getInstance().messages.playerNotFound));
+            return 0;
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal("An unexpected error occurred while adding all emote"));
+            return 0;
+        }
+
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int handleRemoveAll(CommandContext<CommandSourceStack> ctx) {
+        try {
+            final ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
+            int added = (int) Animations.all().keySet().stream().filter(name -> LPStorage.remove(player, name)).count();
+            ctx.getSource().sendSuccess(() -> Component.literal(String.format("Successfully removed %d emotes from %s", added, player.getScoreboardName())), false);
+        } catch (CommandSyntaxException e) {
+            ctx.getSource().sendFailure(TextUtil.parse(ModConfig.getInstance().messages.playerNotFound));
+            return 0;
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal("An unexpected error occurred while removing all emote"));
+            return 0;
+        }
+
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int handleAdd(CommandContext<CommandSourceStack> ctx) {
+        try {
+            final ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
+            final String emoteName = StringArgumentType.getString(ctx, "emote");
+            final var emote = ModConfig.getInstance().getAnimation(emoteName);
+
+            final boolean success = emote != null && LPStorage.add(player, emote.getFirst());
+            if (success) {
+                ctx.getSource().sendSuccess(() -> Component.literal(String.format("Successfully added '%s' to %s", emote, player.getScoreboardName())), false);
+                return Command.SINGLE_SUCCESS;
+            } else {
+                ctx.getSource().sendFailure(Component.literal(String.format("%s already owns '%s'", player.getScoreboardName(), emote)));
+                return 0;
+            }
+        } catch (CommandSyntaxException e) {
+            ctx.getSource().sendFailure(TextUtil.parse(ModConfig.getInstance().messages.playerNotFound));
+            return 0;
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal("An unexpected error occurred while adding emote"));
+            return 0;
+        }
+    }
+
+    private static int handleRemove(CommandContext<CommandSourceStack> ctx) {
+        try {
+            final ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
+            final String emote = StringArgumentType.getString(ctx, "emote");
+            final Pair<ResourceLocation, ConfiguredAnimation> res = ModConfig.getInstance().getAnimation(emote);
+            final boolean success = res != null && LPStorage.remove(player, res.getFirst());
+            if (success) {
+                ctx.getSource().sendSuccess(() -> Component.literal(String.format("Successfully removed '%s' from %s", emote, player.getScoreboardName())), false);
+                return Command.SINGLE_SUCCESS;
+            } else {
+                ctx.getSource().sendFailure(Component.literal(String.format("%s does not own '%s'", player.getScoreboardName(), emote)));
+                return 0;
+            }
+        } catch (CommandSyntaxException e) {
+            ctx.getSource().sendFailure(TextUtil.parse(ModConfig.getInstance().messages.playerNotFound));
+            return 0;
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal("An unexpected error occurred while removing emote"));
+            return 0;
+        }
+    }
+
+    private static int handleList(CommandContext<CommandSourceStack> ctx) {
+        try {
+            final ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
+
+            final java.util.List<String> list = LPStorage.list(player);
+            if (list.isEmpty()) {
+                ctx.getSource().sendFailure(Component.literal(String.format("No entries for player %s!", player.getScoreboardName())));
                 return Command.SINGLE_SUCCESS;
             }
-            return 0;
-        });
 
-        root = root.then(literal("reload").requires(Permissions.require("emotive.reload")).executes(ctx -> {
-            ModConfig.load();
+            for (String s : list) {
+                ctx.getSource().sendSuccess(() -> Component.literal(s), false);
+            }
+
             return Command.SINGLE_SUCCESS;
-        }));
-
-        dispatcher.register(root.then(argument("emote", StringArgumentType.word()).suggests(animationSuggestions).executes(EmotiveCommand::executeEmote)));
+        } catch (CommandSyntaxException e) {
+            ctx.getSource().sendFailure(TextUtil.parse(ModConfig.getInstance().messages.playerNotFound));
+            return 0;
+        }
     }
 
     private static int executeEmote(CommandContext<CommandSourceStack> ctx) {
-        CommandSourceStack source = ctx.getSource();
+        final CommandSourceStack source = ctx.getSource();
 
         if (!source.isPlayer()) {
-            source.sendFailure(Component.literal("This command can only be run by a player!"));
+            source.sendFailure(TextUtil.parse(ModConfig.getInstance().messages.onlyPlayer));
             return 0;
         }
 
-        ServerPlayer player = source.getPlayer();
-        assert player != null;
+        final ServerPlayer player = source.getPlayer();
+        if (player == null) return 0;
 
-        String animation = StringArgumentType.getString(ctx, "emote");
-
-        if (ModConfig.getInstance().animations.values().stream().noneMatch(x -> x.animationName().equals(animation))) {
-            source.sendFailure(Component.literal("Unknown emote: " + animation));
+        final String animation = StringArgumentType.getString(ctx, "emote");
+        final var anim = ModConfig.getInstance().getAnimation(animation);
+        if (anim == null || !LPStorage.owns(player, anim.getFirst())) {
+            source.sendFailure(TextUtil.parse(ModConfig.getInstance().messages.noPermission));
             return 0;
         }
 
-        GestureController.onStart(player, animation);
+        final ConfiguredAnimation found = Animations.all().values().stream()
+                .filter(a -> a.animationName().equals(animation))
+                .findFirst().orElse(null);
+
+        if (found == null) {
+            if (ModConfig.getInstance().messages.unknownEmote != null) source.sendFailure(TextUtil.parse(String.format(ModConfig.getInstance().messages.unknownEmote, animation)));
+            return 0;
+        }
+
+        GestureController.onStart(player, found);
         return Command.SINGLE_SUCCESS;
     }
 }

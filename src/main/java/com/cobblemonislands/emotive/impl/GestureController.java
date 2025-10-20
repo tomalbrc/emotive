@@ -7,8 +7,10 @@ import com.cobblemon.mod.common.api.npc.NPCClasses;
 import com.cobblemon.mod.common.entity.npc.NPCEntity;
 import com.cobblemon.mod.common.entity.npc.NPCPlayerModelType;
 import com.cobblemon.mod.common.entity.npc.NPCPlayerTexture;
+import com.cobblemonislands.emotive.config.ConfiguredAnimation;
 import com.cobblemonislands.emotive.config.ModConfig;
 import com.cobblemonislands.emotive.mixin.EntityAccessor;
+import com.cobblemonislands.emotive.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.ProfileLookupCallback;
@@ -19,27 +21,27 @@ import eu.pb4.polymer.virtualentity.api.VirtualEntityUtils;
 import eu.pb4.polymer.virtualentity.api.attachment.ChunkAttachment;
 import eu.pb4.polymer.virtualentity.api.tracker.EntityTrackedData;
 import it.unimi.dsi.fastutil.ints.IntList;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class GestureController {
-    public static final Reference2ObjectOpenHashMap<UUID, GestureCameraHolder> GESTURE_CAMS = new Reference2ObjectOpenHashMap<>();
-
-    public static final Map<UUID, ModelData> TEXTURE_CACHE = new Object2ObjectOpenHashMap<>();
+    public static final Map<UUID, GestureCameraHolder> GESTURE_CAMS = new ConcurrentHashMap<>();
+    public static final Map<UUID, ModelData> TEXTURE_CACHE = new ConcurrentHashMap<>();
 
     public static void onConnect(ServerPlayer serverPlayer) {
         // to have a cached model/texture of players
@@ -124,7 +126,7 @@ public class GestureController {
         GestureController.GESTURE_CAMS.remove(player.getUUID());
     }
 
-    public static void onStart(ServerPlayer player, String animationName) {
+    public static void onStart(ServerPlayer player, ConfiguredAnimation animation) {
         if (GestureController.GESTURE_CAMS.containsKey(player.getUUID())) // prevent spamming gestures
             return;
 
@@ -139,10 +141,26 @@ public class GestureController {
         ((EntityAccessor)(Entity)playerModel).invokeUnsetRemoved();
         playerModel.noPhysics = true;
         playerModel.setNoGravity(true);
+        playerModel.setMovable(false);
+        playerModel.setLeashable(false);
+        playerModel.setAllowProjectileHits(false);
         playerModel.setInvulnerable(true);
-        playerModel.setNpc(Objects.requireNonNull(NPCClasses.INSTANCE.getByName(ModConfig.getInstance().npcClass)));
+        playerModel.setNpc(Objects.requireNonNull(NPCClasses.INSTANCE.getByIdentifier(animation.npcClass())));
         playerModel.moveTo(player.position(), player.yHeadRot, player.getXRot());
+        playerModel.setHideNameTag(!ModConfig.getInstance().showPlayerName);
+        playerModel.setCustomName(player.getDisplayName());
+        playerModel.setCustomNameVisible(ModConfig.getInstance().showPlayerName);
+        //playerModel.getVariationAspects().add("");
 
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            var item = player.getItemBySlot(slot);
+            playerModel.setItemSlot(slot, item);
+        }
+
+        playerModel.setItemInHand(InteractionHand.MAIN_HAND, player.getMainHandItem());
+        playerModel.setItemInHand(InteractionHand.OFF_HAND, player.getOffhandItem());
+
+        playerModel.setXRot(player.getXRot());
         playerModel.setYHeadRot(player.yHeadRot);
         playerModel.setYBodyRot(player.yHeadRot);
 
@@ -160,11 +178,11 @@ public class GestureController {
 
         player.serverLevel().addFreshEntity(playerModel);
 
-        CompletableFuture.runAsync(() -> playerModel.playAnimation(animationName, List.of()), CompletableFuture.delayedExecutor(50, TimeUnit.MILLISECONDS, player.server));
+        CompletableFuture.runAsync(() -> playerModel.playAnimation(animation.animationName(), List.of()), CompletableFuture.delayedExecutor(50, TimeUnit.MILLISECONDS, player.server));
 
         CompletableFuture.runAsync(() -> {
             if (GestureController.GESTURE_CAMS.containsValue(gestureCameraHolder))
                 onStop(player);
-        }, CompletableFuture.delayedExecutor(6, TimeUnit.SECONDS, player.server));
+        }, CompletableFuture.delayedExecutor(animation.duration(), TimeUnit.SECONDS, player.server));
     }
 }

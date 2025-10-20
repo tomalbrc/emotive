@@ -1,13 +1,13 @@
 package com.cobblemonislands.emotive.config;
 
-import com.cobblemon.mod.common.api.npc.NPCClasses;
-import com.cobblemonislands.emotive.impl.SimpleCodecDeserializer;
+import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import com.mojang.datafixers.util.Pair;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -15,48 +15,67 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class ModConfig {
-    static Path CONFIG_FILE_PATH = FabricLoader.getInstance().getConfigDir().resolve("emotive.json");
+    static Path CONFIG_FILE_PATH = FabricLoader.getInstance().getConfigDir().resolve("emotive/config.json");
     static ModConfig instance;
     static Gson JSON = new GsonBuilder()
             .registerTypeHierarchyAdapter(ResourceLocation.class, new SimpleCodecDeserializer<>(ResourceLocation.CODEC))
             .setPrettyPrinting()
+            .disableHtmlEscaping()
+            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_DASHES)
             .create();
 
-    @SerializedName("npc-class")
-    public String npcClass = "standard";
+    public boolean debug = false;
+
+    public String command = "emotive";
+
+    public boolean showPlayerName = true;
 
     @SerializedName("messages")
     public Messages messages = new Messages();
 
-    public String command = "emotive";
-
-    public Map<ResourceLocation, ConfiguredAnimation> animations = Map.of(
-            ResourceLocation.fromNamespaceAndPath("ci", "send_out"), new ConfiguredAnimation("Send Out", "send_out", 5, null, false),
-            ResourceLocation.fromNamespaceAndPath("ci", "recall"), new ConfiguredAnimation("Recall", "recall", 5, null, false),
-            ResourceLocation.fromNamespaceAndPath("ci", "lose"), new ConfiguredAnimation("Lose", "lose", 5, null, false),
-            ResourceLocation.fromNamespaceAndPath("ci", "win"), new ConfiguredAnimation("Win", "win", 5, null, false)
-    );
-
     public Map<String, Integer> permissions = Map.of(
-            "emotive.command", 2
+            "emotive.command", 2,
+            "emotive.give", 2,
+            "emotive.remove", 2,
+            "emotive.list", 2,
+            "emotive.reload", 2,
+            "emotive.direct", 2
     );
-    public boolean debug = false;
+
+
+    public GuiConfig gui = new GuiConfig();
+
+    public @Nullable Pair<ResourceLocation, ConfiguredAnimation> getAnimation(String path) {
+        for (Map.Entry<ResourceLocation, ConfiguredAnimation> entry : Animations.all().entrySet()) {
+            if (entry.getKey().getPath().equals(path)) {
+                return Pair.of(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return null;
+    }
 
     public static ModConfig getInstance() {
         if (instance == null) {
-            if (!load()) // only save if file wasn't just created
-                save(); // save since newer versions may contain new options, also removes old options
+            if (!load()) {
+                save();
+            }
         }
         return instance;
     }
+
     public static boolean load() {
+        CONFIG_FILE_PATH.toFile().getParentFile().mkdirs();
+
         if (!CONFIG_FILE_PATH.toFile().exists()) {
             instance = new ModConfig();
+
+            Animations.saveExamples();
+            Categories.saveExamples();
+
             try (FileOutputStream stream = new FileOutputStream(CONFIG_FILE_PATH.toFile())) {
                 stream.write(JSON.toJson(instance).getBytes(StandardCharsets.UTF_8));
             } catch (IOException e) {

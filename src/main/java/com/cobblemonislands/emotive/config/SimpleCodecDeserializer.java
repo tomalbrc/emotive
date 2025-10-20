@@ -1,4 +1,4 @@
-package com.cobblemonislands.emotive.impl;
+package com.cobblemonislands.emotive.config;
 
 import com.google.gson.*;
 import com.mojang.serialization.Codec;

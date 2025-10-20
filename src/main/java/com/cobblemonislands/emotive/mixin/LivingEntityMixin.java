@@ -13,14 +13,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(LivingEntity.class)
 public class LivingEntityMixin {
     @Inject(method = "equipmentHasChanged", at = @At("RETURN"), cancellable = true)
-    private void danse$onEquipmentChanged(ItemStack itemStack, ItemStack itemStack2, CallbackInfoReturnable<Boolean> cir) {
+    private void emotive$onEquipmentChanged(ItemStack itemStack, ItemStack itemStack2, CallbackInfoReturnable<Boolean> cir) {
         if ((Object) this instanceof ServerPlayer serverPlayer && GestureController.GESTURE_CAMS.containsKey(serverPlayer.getUUID())) {
             cir.setReturnValue(false);
         }
     }
 
     @Inject(method = "hurt", at = @At("HEAD"))
-    private void danse$handleDamage(DamageSource damageSource, float f, CallbackInfoReturnable<Boolean> cir) {
+    private void emotive$handleDamage(DamageSource damageSource, float f, CallbackInfoReturnable<Boolean> cir) {
         if ((Object) this instanceof ServerPlayer serverPlayer) {
             GestureController.onStop(serverPlayer);
         }
