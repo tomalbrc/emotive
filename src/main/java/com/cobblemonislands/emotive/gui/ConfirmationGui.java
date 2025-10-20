@@ -4,7 +4,6 @@ import com.cobblemonislands.emotive.component.EmotiveToken;
 import com.cobblemonislands.emotive.component.ModComponents;
 import com.cobblemonislands.emotive.config.Animations;
 import com.cobblemonislands.emotive.config.ModConfig;
-import com.cobblemonislands.emotive.storage.LPStorage;
 import com.cobblemonislands.emotive.util.TextUtil;
 import com.cobblemonislands.emotive.util.Util;
 import eu.pb4.sgui.api.GuiHelpers;
@@ -32,14 +31,14 @@ public class ConfirmationGui extends SimpleGui {
         var gui = ModConfig.getInstance().gui;
 
         if (gui.addBackButton) {
-            var loc = gui.backButtonLocation;
+            var loc = gui.cancelButtonLocation;
             int idx = GuiHelpers.posToIndex(loc.x - 1, loc.y - 1, getHeight(), getWidth());
             this.setSlot(idx, GuiElementBuilder.from(gui.backItem())
                     .setName(TextUtil.parse(ModConfig.getInstance().messages.cancel))
                     .setCallback(this::cancel));
         }
 
-        var confirmLoc = gui.confirmButtonLocation != null ? gui.confirmButtonLocation : gui.browseButtonLocation; // fallback
+        var confirmLoc = gui.confirmButtonLocation;
         int confirmIdx = GuiHelpers.posToIndex(confirmLoc.x - 1, confirmLoc.y - 1, getHeight(), getWidth());
         this.setSlot(confirmIdx, GuiElementBuilder.from(gui.confirmItem())
                 .setName(TextUtil.parse(ModConfig.getInstance().messages.confirm))
@@ -49,7 +48,7 @@ public class ConfirmationGui extends SimpleGui {
     private void confirm() {
         Util.clickSound(player);
 
-        if (LPStorage.remove(player, emote)) {
+        if (ModConfig.getInstance().getStorage().remove(player, emote)) {
             var anim = Animations.UNGROUPED.get(emote);
             if (anim == null) {
                 close();
@@ -58,6 +57,8 @@ public class ConfirmationGui extends SimpleGui {
 
             ItemStack item = anim.itemStack();
             item.set(ModComponents.EMOTIVE_TOKEN, new EmotiveToken(emote, anim.permission(), anim.permissionLevel()));
+
+            player.addItem(item);
 
             if (!item.isEmpty() && item.getCount() > 0) {
                 player.spawnAtLocation(item);

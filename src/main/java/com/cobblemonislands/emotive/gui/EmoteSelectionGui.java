@@ -4,7 +4,6 @@ import com.cobblemonislands.emotive.config.Animations;
 import com.cobblemonislands.emotive.config.ConfiguredAnimation;
 import com.cobblemonislands.emotive.config.ModConfig;
 import com.cobblemonislands.emotive.impl.GestureController;
-import com.cobblemonislands.emotive.storage.LPStorage;
 import com.cobblemonislands.emotive.util.TextUtil;
 import com.cobblemonislands.emotive.util.Util;
 import eu.pb4.sgui.api.ClickType;
@@ -41,7 +40,7 @@ public class EmoteSelectionGui extends LayeredGui {
     private List<ConfiguredAnimation> availableAnimations() {
         List<ConfiguredAnimation> res = new ObjectArrayList<>();
         for (Map.Entry<ResourceLocation, ConfiguredAnimation> entry : Animations.all().entrySet()) {
-            if (LPStorage.owns(this.getPlayer(), entry.getKey())) {
+            if (ModConfig.getInstance().getStorage().owns(this.getPlayer(), entry.getKey())) {
                 res.add(entry.getValue());
             }
         }

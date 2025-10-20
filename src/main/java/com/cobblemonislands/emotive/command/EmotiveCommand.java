@@ -5,7 +5,6 @@ import com.cobblemonislands.emotive.config.ConfiguredAnimation;
 import com.cobblemonislands.emotive.config.ModConfig;
 import com.cobblemonislands.emotive.gui.EmoteSelectionGui;
 import com.cobblemonislands.emotive.impl.GestureController;
-import com.cobblemonislands.emotive.storage.LPStorage;
 import com.cobblemonislands.emotive.util.TextUtil;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -44,7 +43,7 @@ public final class EmotiveCommand {
                 final ServerPlayer sourcePlayer = context.getSource().getPlayer();
                 final boolean hasAccess = (sourcePlayer == null)
                         || sourcePlayer.hasPermissions(4)
-                        || LPStorage.owns(sourcePlayer, id);
+                        || ModConfig.getInstance().getStorage().owns(sourcePlayer, id);
 
                 if (!hasAccess) continue;
 
@@ -116,7 +115,7 @@ public final class EmotiveCommand {
     private static int handleAddAll(CommandContext<CommandSourceStack> ctx) {
         try {
             final ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
-            int added = (int) Animations.all().keySet().stream().filter(name -> LPStorage.add(player, name)).count();
+            int added = (int) Animations.all().keySet().stream().filter(name -> ModConfig.getInstance().getStorage().add(player, name)).count();
             ctx.getSource().sendSuccess(() -> Component.literal(String.format("Successfully added %d emotes to %s", added, player.getScoreboardName())), false);
         } catch (CommandSyntaxException e) {
             ctx.getSource().sendFailure(TextUtil.parse(ModConfig.getInstance().messages.playerNotFound));
@@ -132,7 +131,7 @@ public final class EmotiveCommand {
     private static int handleRemoveAll(CommandContext<CommandSourceStack> ctx) {
         try {
             final ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
-            int added = (int) Animations.all().keySet().stream().filter(name -> LPStorage.remove(player, name)).count();
+            int added = (int) Animations.all().keySet().stream().filter(name -> ModConfig.getInstance().getStorage().remove(player, name)).count();
             ctx.getSource().sendSuccess(() -> Component.literal(String.format("Successfully removed %d emotes from %s", added, player.getScoreboardName())), false);
         } catch (CommandSyntaxException e) {
             ctx.getSource().sendFailure(TextUtil.parse(ModConfig.getInstance().messages.playerNotFound));
@@ -151,7 +150,7 @@ public final class EmotiveCommand {
             final String emoteName = StringArgumentType.getString(ctx, "emote");
             final var emote = ModConfig.getInstance().getAnimation(emoteName);
 
-            final boolean success = emote != null && LPStorage.add(player, emote.getFirst());
+            final boolean success = emote != null && ModConfig.getInstance().getStorage().add(player, emote.getFirst());
             if (success) {
                 ctx.getSource().sendSuccess(() -> Component.literal(String.format("Successfully added '%s' to %s", emote, player.getScoreboardName())), false);
                 return Command.SINGLE_SUCCESS;
@@ -173,7 +172,7 @@ public final class EmotiveCommand {
             final ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
             final String emote = StringArgumentType.getString(ctx, "emote");
             final Pair<ResourceLocation, ConfiguredAnimation> res = ModConfig.getInstance().getAnimation(emote);
-            final boolean success = res != null && LPStorage.remove(player, res.getFirst());
+            final boolean success = res != null && ModConfig.getInstance().getStorage().remove(player, res.getFirst());
             if (success) {
                 ctx.getSource().sendSuccess(() -> Component.literal(String.format("Successfully removed '%s' from %s", emote, player.getScoreboardName())), false);
                 return Command.SINGLE_SUCCESS;
@@ -194,7 +193,7 @@ public final class EmotiveCommand {
         try {
             final ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
 
-            final java.util.List<String> list = LPStorage.list(player);
+            final java.util.List<String> list = ModConfig.getInstance().getStorage().list(player);
             if (list.isEmpty()) {
                 ctx.getSource().sendFailure(Component.literal(String.format("No entries for player %s!", player.getScoreboardName())));
                 return Command.SINGLE_SUCCESS;
@@ -224,7 +223,7 @@ public final class EmotiveCommand {
 
         final String animation = StringArgumentType.getString(ctx, "emote");
         final var anim = ModConfig.getInstance().getAnimation(animation);
-        if (anim == null || !LPStorage.owns(player, anim.getFirst())) {
+        if (anim == null || !ModConfig.getInstance().getStorage().owns(player, anim.getFirst())) {
             source.sendFailure(TextUtil.parse(ModConfig.getInstance().messages.noPermission));
             return 0;
         }

@@ -13,63 +13,86 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.List;
 import java.util.Map;
 
-public class LPStorage {
-    public static LuckPerms LP = LuckPermsProvider.get();
+public class LPStorage implements EmoteStorage {
 
-    public static long timestamp() {
+    private final LuckPerms luckPerms;
+
+    public LPStorage() {
+        this.luckPerms = LuckPermsProvider.get();
+    }
+
+    public LPStorage(LuckPerms luckPerms) {
+        this.luckPerms = luckPerms;
+    }
+
+    public long timestamp() {
         return System.currentTimeMillis() / 1000L; // seconds
     }
 
-    public static boolean add(ServerPlayer player, ResourceLocation animation) {
-        User user = LP.getUserManager().getUser(player.getUUID());
+    public boolean add(ServerPlayer player, ResourceLocation animation) {
+        User user = luckPerms.getUserManager().getUser(player.getUUID());
         String key = String.format("%s.%s", Emotive.MODID, animation.toLanguageKey());
         if (user != null && !owns(player, animation)) {
             MetaNode node = MetaNode.builder(key, Long.toString(timestamp())).build();
             user.data().clear(NodeType.META.predicate(mn -> mn.getMetaKey().equals(key)));
             user.data().add(node);
-            LP.getUserManager().saveUser(user);
+            luckPerms.getUserManager().saveUser(user);
 
             return true;
         }
-
         return false;
     }
 
-    public static boolean remove(ServerPlayer player, ResourceLocation animation) {
-        User user = LP.getUserManager().getUser(player.getUUID());
+    public boolean remove(ServerPlayer player, ResourceLocation animation) {
+        User user = luckPerms.getUserManager().getUser(player.getUUID());
         String key = String.format("%s.%s", Emotive.MODID, animation.toLanguageKey());
         if (user != null) {
-            boolean[] locked = new boolean[]{false};
+            boolean[] removed = new boolean[]{false};
             user.data().clear(NodeType.META.predicate(mn -> {
-                var eq = mn.getMetaKey().equals(key);
+                boolean eq = mn.getMetaKey().equals(key);
                 if (eq)
-                    locked[0] = true;
-
-                return mn.getMetaKey().equals(key);
+                    removed[0] = true;
+                return eq;
             }));
-            LP.getUserManager().saveUser(user);
-
-            return locked[0];
+            luckPerms.getUserManager().saveUser(user);
+            return removed[0];
         }
-
         return false;
     }
 
-    public static boolean owns(ServerPlayer player, ResourceLocation animation) {
-        User user = LP.getUserManager().getUser(player.getUUID());
+    public boolean owns(ServerPlayer player, ResourceLocation animation) {
+        User user = luckPerms.getUserManager().getUser(player.getUUID());
+        if (user == null) return false;
         String key = String.format("%s.%s", Emotive.MODID, animation.toLanguageKey());
-        return user != null && user.getCachedData().getMetaData().getMetaValue(key) != null;
+        return user.getCachedData().getMetaData().getMetaValue(key) != null;
     }
 
-    public static List<String> list(ServerPlayer player) {
-        List<String> res = new ObjectArrayList<>();
-        User user = LP.getUserManager().getUser(player.getUUID());
-        if (user != null) {
-            for (Map.Entry<String, List<String>> entry : user.getCachedData().getMetaData().getMeta().entrySet()) {
-                if (entry.getKey().startsWith(Emotive.MODID)) res.add(entry.getKey());
+    public int timestamp(ServerPlayer player, ResourceLocation animation) {
+        User user = luckPerms.getUserManager().getUser(player.getUUID());
+        if (user == null) return 0;
 
+        String key = String.format("%s.%s", Emotive.MODID, animation.toLanguageKey());
+        String val = user.getCachedData().getMetaData().getMetaValue(key);
+        if (val != null) {
+            try {
+                return Integer.parseInt(val);
+            } catch (NumberFormatException ignored) {
             }
         }
-        return res;
+        return 0;
+    }
+
+    public List<String> list(ServerPlayer player) {
+        List<String> result = new ObjectArrayList<>();
+        User user = luckPerms.getUserManager().getUser(player.getUUID());
+        if (user != null) {
+            for (Map.Entry<String, List<String>> entry :
+                    user.getCachedData().getMetaData().getMeta().entrySet()) {
+                if (entry.getKey().startsWith(Emotive.MODID)) {
+                    result.add(entry.getKey());
+                }
+            }
+        }
+        return result;
     }
 }

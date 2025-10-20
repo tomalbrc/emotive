@@ -1,7 +1,6 @@
 package com.cobblemonislands.emotive.gui;
 
 import com.cobblemonislands.emotive.config.*;
-import com.cobblemonislands.emotive.storage.LPStorage;
 import com.cobblemonislands.emotive.util.TextUtil;
 import com.cobblemonislands.emotive.util.Util;
 import eu.pb4.sgui.api.GuiHelpers;
@@ -44,7 +43,8 @@ public class EmoteBrowseGui extends LayeredGui {
                     .setName(TextUtil.parse(ModConfig.getInstance().messages.back))
                     .setCallback(() -> {
                         Util.clickSound(getPlayer());
-                        new EmoteSelectionGui(getPlayer(), false).open();
+                        if (category == null) new EmoteSelectionGui(getPlayer(), false).open();
+                        else new EmoteBrowseGui(getPlayer(), true, null).open();
                     }));
         }
     }
@@ -57,7 +57,7 @@ public class EmoteBrowseGui extends LayeredGui {
             for (var entry : available) {
                 var animation = entry.getValue();
                 GuiElementBuilder b = animation.guiElementBuilder(false);
-                if (LPStorage.owns(getPlayer(), entry.getKey())) {
+                if (ModConfig.getInstance().getStorage().owns(getPlayer(), entry.getKey())) {
                     b.addLoreLine(Component.empty());
                     b.addLoreLine(Component.empty().append(Component.empty().withStyle(ConfiguredAnimation.EMPTY).append(TextUtil.parse(ModConfig.getInstance().messages.alreadyOwning))));
                 }
@@ -65,12 +65,17 @@ public class EmoteBrowseGui extends LayeredGui {
             }
         } else {
             for (Map.Entry<String, ConfiguredCategory> entry : Categories.CATEGORIES.entrySet()) {
-                builders.add(entry.getValue().guiElementBuilder());
+                builders.add(entry.getValue().guiElementBuilder().setCallback(() -> new EmoteBrowseGui(getPlayer(), true, entry.getValue()).open()));
             }
 
-            var available = Animations.UNGROUPED.values();
-            for (ConfiguredAnimation animation : available) {
+            var available = Animations.UNGROUPED;
+            for (var entry : available.entrySet()) {
+                ConfiguredAnimation animation = entry.getValue();
                 GuiElementBuilder b = animation.guiElementBuilder(false);
+                if (ModConfig.getInstance().getStorage().owns(getPlayer(), entry.getKey())) {
+                    b.addLoreLine(Component.empty());
+                    b.addLoreLine(Component.empty().append(Component.empty().withStyle(ConfiguredAnimation.EMPTY).append(TextUtil.parse(ModConfig.getInstance().messages.alreadyOwning))));
+                }
                 builders.add(b);
             }
         }

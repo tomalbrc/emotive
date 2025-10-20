@@ -9,6 +9,7 @@ import com.cobblemonislands.emotive.impl.GestureController;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
 
@@ -28,5 +29,7 @@ public class Emotive implements ModInitializer {
         ServerPlayConnectionEvents.DISCONNECT.register((serverGamePacketListener, minecraftServer) -> GestureController.onDisconnect(serverGamePacketListener.player));
 
         CommandRegistrationCallback.EVENT.register((commandDispatcher, commandBuildContext, commandSelection) -> EmotiveCommand.register(commandDispatcher));
+
+        ServerLifecycleEvents.SERVER_STOPPING.register(x -> ModConfig.getInstance().getStorage().close());
     }
 }

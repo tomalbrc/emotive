@@ -1,5 +1,9 @@
 package com.cobblemonislands.emotive.config;
 
+import com.cobblemonislands.emotive.storage.EmoteStorage;
+import com.cobblemonislands.emotive.storage.LPStorage;
+import com.cobblemonislands.emotive.storage.MongoCachedStorage;
+import com.cobblemonislands.emotive.storage.MongoSettings;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -48,6 +52,33 @@ public class ModConfig {
 
     public GuiConfig gui = new GuiConfig();
 
+    transient EmoteStorage storage;
+    private MongoSettings mongoDbSettings = new MongoSettings(
+            false,
+            "localhost",
+            27017,
+            "emotive",
+            "user",
+            "password",
+            "admin",
+            false,
+            false,
+            20
+    );
+
+    public String mongoDbCollection = "emotes";
+
+    public EmoteStorage getStorage() {
+        if (storage == null) {
+            if (mongoDbSettings == null || !mongoDbSettings.enabled())
+                this.storage = new LPStorage();
+            else
+                this.storage = new MongoCachedStorage(ModConfig.getInstance().mongoDbSettings, mongoDbCollection, 300);
+        }
+
+        return storage;
+    }
+
     public @Nullable Pair<ResourceLocation, ConfiguredAnimation> getAnimation(String path) {
         for (Map.Entry<ResourceLocation, ConfiguredAnimation> entry : Animations.all().entrySet()) {
             if (entry.getKey().getPath().equals(path)) {
@@ -68,6 +99,11 @@ public class ModConfig {
     }
 
     public static boolean load() {
+        Animations.UNGROUPED.clear();
+        Animations.GROUPED.clear();
+        Categories.CATEGORIES.clear();
+
+
         CONFIG_FILE_PATH.toFile().getParentFile().mkdirs();
 
         if (!CONFIG_FILE_PATH.toFile().exists()) {

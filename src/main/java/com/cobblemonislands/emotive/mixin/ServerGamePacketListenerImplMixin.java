@@ -1,8 +1,8 @@
 package com.cobblemonislands.emotive.mixin;
 
 import com.cobblemonislands.emotive.component.ModComponents;
+import com.cobblemonislands.emotive.config.ModConfig;
 import com.cobblemonislands.emotive.impl.GestureController;
-import com.cobblemonislands.emotive.storage.LPStorage;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.server.level.ServerPlayer;
@@ -64,7 +64,7 @@ public abstract class ServerGamePacketListenerImplMixin {
     private void emotive$backpackInteraction(ServerboundUseItemPacket serverboundUseItemPacket, CallbackInfo ci, @Local ItemStack itemStack) {
         if (itemStack.has(ModComponents.EMOTIVE_TOKEN)) {
             var tokenId = itemStack.get(ModComponents.EMOTIVE_TOKEN);
-            if (tokenId != null && tokenId.canUse(player) && LPStorage.add(player, tokenId.id())) {
+            if (tokenId != null && tokenId.canUse(player) && ModConfig.getInstance().getStorage().add(player, tokenId.id())) {
                 itemStack.consume(1, player);
                 ci.cancel();
             }
@@ -75,7 +75,7 @@ public abstract class ServerGamePacketListenerImplMixin {
     private void emotive$backpackInteraction(ServerboundUseItemOnPacket serverboundUseItemOnPacket, CallbackInfo ci, @Local ItemStack itemStack) {
         if (itemStack.has(ModComponents.EMOTIVE_TOKEN)) {
             var tokenId = itemStack.get(ModComponents.EMOTIVE_TOKEN);
-            if (tokenId != null && tokenId.canUse(player) && LPStorage.add(player, tokenId.id())) {
+            if (tokenId != null && tokenId.canUse(player) && ModConfig.getInstance().getStorage().add(player, tokenId.id())) {
                 itemStack.consume(1, player);
                 ci.cancel();
             }

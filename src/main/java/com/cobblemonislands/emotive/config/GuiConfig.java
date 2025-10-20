@@ -48,7 +48,7 @@ public class GuiConfig {
 
     public boolean addBrowseButton = true;
     public ResourceLocation browseButtonItem = Items.CHEST.builtInRegistryHolder().key().location();
-    public Vector2i browseButtonLocation = new Vector2i(3, 6);
+    public Vector2i browseButtonLocation = new Vector2i(1, 6);
     public ItemStack browseItem() {
         var item = BuiltInRegistries.ITEM.get(browseButtonItem).getDefaultInstance();
         item.set(DataComponents.ITEM_NAME, TextUtil.parse(ModConfig.getInstance().messages.browse));
@@ -57,6 +57,7 @@ public class GuiConfig {
 
     public ResourceLocation confirmButtonItem = Items.EMERALD.builtInRegistryHolder().key().location();
     public Vector2i confirmButtonLocation = new Vector2i(7, 1);
+    public Vector2i cancelButtonLocation = new Vector2i(3, 1);
     public ItemStack confirmItem() {
         var item = BuiltInRegistries.ITEM.get(confirmButtonItem).getDefaultInstance();
         item.set(DataComponents.ITEM_NAME, TextUtil.parse(ModConfig.getInstance().messages.confirm));

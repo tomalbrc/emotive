@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonReader;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Items;
@@ -31,8 +30,8 @@ public class Animations {
         UNGROUPED.put(id, animation);
     }
 
-    public static Object2ObjectOpenHashMap<ResourceLocation, ConfiguredAnimation> all() {
-        Object2ObjectOpenHashMap<ResourceLocation, ConfiguredAnimation> map = new Object2ObjectOpenHashMap<>();
+    public static Map<ResourceLocation, ConfiguredAnimation> all() {
+        Map<ResourceLocation, ConfiguredAnimation> map = new Object2ObjectArrayMap<>();
         map.putAll(GROUPED);
         map.putAll(UNGROUPED);
         return map;

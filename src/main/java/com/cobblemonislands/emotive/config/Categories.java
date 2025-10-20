@@ -81,7 +81,7 @@ public class Categories {
                         .build()
         );
 
-        ConfiguredCategory category = new ConfiguredCategory("example_category", "<rainbow>Example Category</rainbow>", Items.KNOWLEDGE_BOOK.builtInRegistryHolder().key().location(), null, null, false, animations);
+        ConfiguredCategory category = new ConfiguredCategory("example_category", "<green>Example Category</green>", Items.KNOWLEDGE_BOOK.builtInRegistryHolder().key().location(), null, null, false, animations);
 
         Path dir = FabricLoader.getInstance().getConfigDir().resolve("emotive/categories");
         dir.toFile().mkdirs();
