@@ -9,6 +9,13 @@ import java.util.List;
  * Generic interface for storing and retrieving player emote data.
  */
 public interface EmoteStorage {
+    enum Type {
+        MARIADB,
+        POSTGRESQL,
+        SQLITE,
+        MONGODB,
+        LPMETA
+    }
 
     /**
      * Adds a new emote to a player’s storage.

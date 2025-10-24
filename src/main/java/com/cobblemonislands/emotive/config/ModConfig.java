@@ -1,9 +1,9 @@
 package com.cobblemonislands.emotive.config;
 
-import com.cobblemonislands.emotive.storage.EmoteStorage;
-import com.cobblemonislands.emotive.storage.LPStorage;
-import com.cobblemonislands.emotive.storage.MongoCachedStorage;
-import com.cobblemonislands.emotive.storage.MongoSettings;
+import com.cobblemonislands.emotive.storage.*;
+import com.cobblemonislands.emotive.storage.hikari.MariaStorage;
+import com.cobblemonislands.emotive.storage.hikari.PostgresStorage;
+import com.cobblemonislands.emotive.storage.hikari.SqliteStorage;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -53,27 +53,33 @@ public class ModConfig {
     public GuiConfig gui = new GuiConfig();
 
     transient EmoteStorage storage;
-    private MongoSettings mongoDbSettings = new MongoSettings(
-            false,
-            "localhost",
-            27017,
-            "emotive",
-            "user",
-            "password",
-            "admin",
-            false,
-            false,
-            20
-    );
+
+    public EmoteStorage.Type storageType = EmoteStorage.Type.MARIADB;
+    public DatabaseConfig database = new DatabaseConfig.Builder()
+            .host("localhost")
+            .port(3306)
+            .user("username")
+            .password("secret")
+            .maxPoolSize(10)
+            .sslEnabled(false)
+            .database("emotes_db")
+            .build();
 
     public String mongoDbCollection = "emotes";
 
     public EmoteStorage getStorage() {
-        if (storage == null) {
-            if (mongoDbSettings == null || !mongoDbSettings.enabled())
-                this.storage = new LPStorage();
-            else
-                this.storage = new MongoCachedStorage(ModConfig.getInstance().mongoDbSettings, mongoDbCollection, 300);
+        if (storage != null) return storage;
+
+        if (database == null) {
+            this.storage = new LPStorage();
+        } else {
+            switch (storageType) {
+                case MONGODB -> storage = new MongoCachedStorage(database, mongoDbCollection, 300);
+                case MARIADB -> storage = new MariaStorage(database);
+                case POSTGRESQL -> storage = new PostgresStorage(database);
+                case SQLITE -> storage = new SqliteStorage(database);
+                default -> storage = new LPStorage();
+            }
         }
 
         return storage;
@@ -102,7 +108,6 @@ public class ModConfig {
         Animations.UNGROUPED.clear();
         Animations.GROUPED.clear();
         Categories.CATEGORIES.clear();
-
 
         CONFIG_FILE_PATH.toFile().getParentFile().mkdirs();
 

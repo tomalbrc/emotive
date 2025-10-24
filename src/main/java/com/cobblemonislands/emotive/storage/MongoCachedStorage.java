@@ -23,26 +23,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class MongoCachedStorage implements EmoteStorage {
-
     private final MongoClient mongoClient;
     private final MongoDatabase database;
     private final MongoCollection<Document> collection;
     private final LoadingCache<String, Map<String, Integer>> cache;
 
-    /**
-     * Builds MongoCachedStorage using MongoSettings record.
-     */
-    public MongoCachedStorage(MongoSettings settings, String collectionName, long cacheExpireSeconds) {
-        ConnectionString connString = new ConnectionString(settings.toConnectionString());
+    public MongoCachedStorage(DatabaseConfig settings, String collectionName, long cacheExpireSeconds) {
+        ConnectionString connString = new ConnectionString(settings.mongoConnectionString());
 
         MongoClientSettings mongoClientSettings = MongoClientSettings.builder()
                 .applyConnectionString(connString)
                 .applyToConnectionPoolSettings(builder ->
-                        builder.maxSize(settings.connectionPoolSize()))
+                        builder.maxSize(settings.maxPoolSize))
                 .build();
 
         this.mongoClient = MongoClients.create(mongoClientSettings);
-        this.database = mongoClient.getDatabase(settings.database());
+        this.database = mongoClient.getDatabase(settings.databaseName);
         this.collection = database.getCollection(collectionName);
 
         this.cache = CacheBuilder.newBuilder()
