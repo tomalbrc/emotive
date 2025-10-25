@@ -62,7 +62,7 @@ public class ModConfig {
             .password("secret")
             .maxPoolSize(10)
             .sslEnabled(false)
-            .database("emotes_db")
+            .database("cosmetic")
             .build();
 
     public String mongoDbCollection = "emotes";

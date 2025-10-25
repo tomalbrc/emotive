@@ -19,6 +19,17 @@ A Minecraft mod that adds emotes using Cobblemon NPCs.
   "debug": false,
   "command": "emotive",
   "show-player-name": true,
+  "storage-type": "MARIADB",
+  "database": {
+    "host": "localhost",
+    "port": 3306,
+    "user": "username",
+    "password": "secret",
+    "database": "emotes_db",
+    "max-pool-size": 10,
+    "ssl-enabled": false
+  },
+  "mongo-db-collection": "emotes",
   "messages": {
     "player-not-found": "Player not found",
     "back": "Back",
@@ -35,7 +46,7 @@ A Minecraft mod that adds emotes using Cobblemon NPCs.
   },
   "permissions": {
     "emotive.command": 2,
-    "emotive.Give": 2,
+    "emotive.give": 2,
     "emotive.list": 2,
     "emotive.remove": 2,
     "emotive.reload": 2,
@@ -81,6 +92,12 @@ A Minecraft mod that adds emotes using Cobblemon NPCs.
 * `debug`: Enable debug logging
 * `command`: Main command name
 * `show-player-name`: Show player names during emotes
+
+**Storage:**
+
+* `storage-type`: Can be `LPMETA`, `MONGODB`, `MARIADB`, `POSTGRESQL`, or `SQLITE`
+* `database`: Defines connection details for SQL databases
+* `mongo-db-collection`: MongoDB collection name for emote data
 
 **GUI:**
 
@@ -181,6 +198,9 @@ Organize emotes into categories:
 
 * **LuckPerms (default)** - Uses LuckPerms meta values
 * **MongoDB** - Alternative database storage
+* **MariaDB / MySQL** - SQL database storage
+* **PostgreSQL** - Advanced SQL database storage
+* **SQLite** - Local file storage
 
 ## File Structure
 
@@ -193,3 +213,4 @@ config/
     └── categories/
         └── [category-name].json
 ```
+
