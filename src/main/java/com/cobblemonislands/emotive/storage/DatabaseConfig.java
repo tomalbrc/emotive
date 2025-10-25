@@ -12,6 +12,11 @@ public class DatabaseConfig {
     public boolean sslEnabled;
     public String databaseName;
 
+    public int connectionTimeout = 30_000;
+    public int idleTimeout = 600_000;
+    public int keepaliveTime = 300_000;
+    public int validationTimeout = 5_000;
+
     @Nullable
     String authDatabase;
     boolean useSrv;

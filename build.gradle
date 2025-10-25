@@ -42,7 +42,7 @@ dependencies {
     include modImplementation('me.lucko:fabric-permissions-api:0.3.1')
     compileOnly 'net.luckperms:api:5.4'
 
-    implementation include("org.mongodb:mongodb-driver-sync:5.7.1")
+    implementation include("org.mongodb:mongodb-driver-sync:5.2.1")
     implementation include("com.zaxxer:HikariCP:5.1.0")
     implementation include("org.mariadb.jdbc:mariadb-java-client:3.5.6")
     implementation include("org.postgresql:postgresql:42.7.8")

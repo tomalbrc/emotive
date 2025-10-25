@@ -20,6 +20,10 @@ public abstract class AbstractHikariStorage implements EmoteStorage {
         hikariConfig.setUsername(cfg.user);
         hikariConfig.setPassword(cfg.password);
         hikariConfig.setMaximumPoolSize(cfg.maxPoolSize);
+        hikariConfig.setIdleTimeout(cfg.idleTimeout);
+        hikariConfig.setKeepaliveTime(cfg.keepaliveTime);
+        hikariConfig.setConnectionTimeout(cfg.connectionTimeout);
+        hikariConfig.setValidationTimeout(cfg.validationTimeout);
 
         this.dataSource = new HikariDataSource(hikariConfig);
     }
