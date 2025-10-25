@@ -19,8 +19,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -193,15 +195,17 @@ public final class EmotiveCommand {
         try {
             final ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
 
-            final java.util.List<String> list = ModConfig.getInstance().getStorage().list(player);
-            if (list.isEmpty()) {
-                ctx.getSource().sendFailure(Component.literal(String.format("No entries for player %s!", player.getScoreboardName())));
-                return Command.SINGLE_SUCCESS;
-            }
+            CompletableFuture.runAsync(() -> {
+                final List<String> list = ModConfig.getInstance().getStorage().list(player);
+                if (list.isEmpty()) {
+                    ctx.getSource().sendFailure(Component.literal(String.format("No entries for player %s!", player.getScoreboardName())));
+                    return;
+                }
 
-            for (String s : list) {
-                ctx.getSource().sendSuccess(() -> Component.literal(s), false);
-            }
+                for (String s : list) {
+                    ctx.getSource().sendSuccess(() -> Component.literal(s), false);
+                }
+            });
 
             return Command.SINGLE_SUCCESS;
         } catch (CommandSyntaxException e) {
@@ -223,21 +227,24 @@ public final class EmotiveCommand {
 
         final String animation = StringArgumentType.getString(ctx, "emote");
         final var anim = ModConfig.getInstance().getAnimation(animation);
-        if (anim == null || !ModConfig.getInstance().getStorage().owns(player, anim.getFirst())) {
-            source.sendFailure(TextUtil.parse(ModConfig.getInstance().messages.noPermission));
-            return 0;
-        }
+        CompletableFuture.runAsync(() -> {
+            if (anim == null || !ModConfig.getInstance().getStorage().owns(player, anim.getFirst())) {
+                source.sendFailure(TextUtil.parse(ModConfig.getInstance().messages.noPermission));
+                return;
+            }
 
-        final ConfiguredAnimation found = Animations.all().values().stream()
-                .filter(a -> a.animationName().equals(animation))
-                .findFirst().orElse(null);
+            final ConfiguredAnimation found = Animations.all().values().stream()
+                    .filter(a -> a.animationName().equals(animation))
+                    .findFirst().orElse(null);
 
-        if (found == null) {
-            if (ModConfig.getInstance().messages.unknownEmote != null) source.sendFailure(TextUtil.parse(String.format(ModConfig.getInstance().messages.unknownEmote, animation)));
-            return 0;
-        }
+            if (found == null) {
+                if (ModConfig.getInstance().messages.unknownEmote != null) source.sendFailure(TextUtil.parse(String.format(ModConfig.getInstance().messages.unknownEmote, animation)));
+                return;
+            }
 
-        GestureController.onStart(player, found);
+            ctx.getSource().getServer().execute(() -> GestureController.onStart(player, found));
+        });
+
         return Command.SINGLE_SUCCESS;
     }
 }
