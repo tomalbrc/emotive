@@ -66,8 +66,8 @@ public abstract class ServerGamePacketListenerImplMixin {
             var tokenId = itemStack.get(ModComponents.EMOTIVE_TOKEN);
             if (tokenId != null && tokenId.canUse(player) && ModConfig.getInstance().getStorage().add(player, tokenId.id())) {
                 itemStack.consume(1, player);
-                ci.cancel();
             }
+            ci.cancel();
         }
     }
 
