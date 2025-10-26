@@ -96,7 +96,7 @@ A Minecraft mod that adds emotes using Cobblemon NPCs.
 **Storage:**
 
 * `storage-type`: Can be `LPMETA`, `MONGODB`, `MARIADB`, `POSTGRESQL`, or `SQLITE`
-* `database`: Defines connection details for SQL databases
+* `database`: Defines connection details for databases
 * `mongo-db-collection`: MongoDB collection name for emote data
 
 **GUI:**
@@ -104,6 +104,15 @@ A Minecraft mod that adds emotes using Cobblemon NPCs.
 * Customize button positions, items, and menu layouts
 * Adjust menu heights and titles
 * Toggle confirmation menus
+
+** Permissions: **
+
+Allows to assign vanilla permission levels for the luckperm nodes.
+
+** Messages: **
+
+Player facing messages / strings
+
 
 ## Creating Emotes
 
