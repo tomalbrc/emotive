@@ -18,4 +18,5 @@ public class Messages {
     public String cancel = "Cancel";
     public String componentTooltip = "Emote: %s";
     public String alreadyOwning = "<green>You own this emote</green>";
+    public String added = "%s was added to your emotes!";
 }

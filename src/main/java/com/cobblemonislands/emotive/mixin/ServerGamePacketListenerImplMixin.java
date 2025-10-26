@@ -1,8 +1,10 @@
 package com.cobblemonislands.emotive.mixin;
 
 import com.cobblemonislands.emotive.component.ModComponents;
+import com.cobblemonislands.emotive.config.Animations;
 import com.cobblemonislands.emotive.config.ModConfig;
 import com.cobblemonislands.emotive.impl.GestureController;
+import com.cobblemonislands.emotive.util.TextUtil;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.server.level.ServerPlayer;
@@ -65,6 +67,7 @@ public abstract class ServerGamePacketListenerImplMixin {
         if (itemStack.has(ModComponents.EMOTIVE_TOKEN)) {
             var tokenId = itemStack.get(ModComponents.EMOTIVE_TOKEN);
             if (tokenId != null && tokenId.canUse(player) && ModConfig.getInstance().getStorage().add(player, tokenId.id())) {
+                player.sendSystemMessage(TextUtil.parse(String.format(ModConfig.getInstance().messages.added, Animations.all().get(tokenId.id()).title())));
                 itemStack.consume(1, player);
             }
             ci.cancel();
@@ -76,6 +79,7 @@ public abstract class ServerGamePacketListenerImplMixin {
         if (itemStack.has(ModComponents.EMOTIVE_TOKEN)) {
             var tokenId = itemStack.get(ModComponents.EMOTIVE_TOKEN);
             if (tokenId != null && tokenId.canUse(player) && ModConfig.getInstance().getStorage().add(player, tokenId.id())) {
+                player.sendSystemMessage(TextUtil.parse(String.format(ModConfig.getInstance().messages.added, Animations.all().get(tokenId.id()).title())));
                 itemStack.consume(1, player);
             }
             ci.cancel();
