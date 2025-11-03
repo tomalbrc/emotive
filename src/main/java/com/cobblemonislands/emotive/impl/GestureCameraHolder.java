@@ -9,9 +9,13 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
+import net.minecraft.network.protocol.game.ClientboundRemoveMobEffectPacket;
+import net.minecraft.network.protocol.game.ClientboundUpdateMobEffectPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.util.Mth;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.Vec3;
@@ -68,18 +72,29 @@ public class GestureCameraHolder extends ElementHolder {
 
     @Override
     public boolean startWatching(ServerGamePacketListenerImpl player) {
-        if (player.player == this.player) {
-            return super.startWatching(player);
-        }
-        return false;
+        player.send(new ClientboundUpdateMobEffectPacket(this.player.getId(), new MobEffectInstance(MobEffects.INVISIBILITY, 72000, 0, true, false), false));
+        return super.startWatching(player);
+    }
+
+    @Override
+    public boolean stopWatching(ServerGamePacketListenerImpl player) {
+        MobEffectInstance effect = this.player.getEffect(MobEffects.INVISIBILITY);
+        if (effect == null)
+            player.send(new ClientboundRemoveMobEffectPacket(this.player.getId(), MobEffects.INVISIBILITY));
+        else
+            player.send(new ClientboundUpdateMobEffectPacket(this.player.getId(), effect, false));
+
+        return super.stopWatching(player);
     }
 
     @Override
     protected void startWatchingExtraPackets(ServerGamePacketListenerImpl player, Consumer<Packet<ClientGamePacketListener>> packetConsumer) {
         super.startWatchingExtraPackets(player, packetConsumer);
-        packetConsumer.accept(VirtualEntityUtils.createRidePacket(cameraElement.getEntityId(), IntList.of(player.player.getId())));
-        packetConsumer.accept(VirtualEntityUtils.createSetCameraEntityPacket(cameraElement.getEntityId()));
-        packetConsumer.accept(new ClientboundGameEventPacket(ClientboundGameEventPacket.CHANGE_GAME_MODE, GameType.SPECTATOR.getId()));
+        if (this.player.connection == player) {
+            packetConsumer.accept(VirtualEntityUtils.createRidePacket(cameraElement.getEntityId(), IntList.of(player.player.getId())));
+            packetConsumer.accept(VirtualEntityUtils.createSetCameraEntityPacket(cameraElement.getEntityId()));
+            packetConsumer.accept(new ClientboundGameEventPacket(ClientboundGameEventPacket.CHANGE_GAME_MODE, GameType.SPECTATOR.getId()));
+        }
     }
 
     @Override
@@ -111,7 +126,7 @@ public class GestureCameraHolder extends ElementHolder {
             var adjustedPos = currentPoint(-(Math.max(Mth.abs((float) blockHitResult.getLocation().distanceTo(eyePos)) - 0.5f, 0.1f)));
 
             var packet = VirtualEntityUtils.createMovePacket(this.cameraElement.getEntityId(), Vec3.ZERO, new Vec3(adjustedPos), true, this.yaw-180, this.pitch);
-            this.sendPacket(packet);
+            this.player.connection.send(packet);
 
             this.dirtyRot = false;
         }
