@@ -7,6 +7,7 @@ import com.cobblemon.mod.common.api.npc.NPCClasses;
 import com.cobblemon.mod.common.entity.npc.NPCEntity;
 import com.cobblemon.mod.common.entity.npc.NPCPlayerModelType;
 import com.cobblemon.mod.common.entity.npc.NPCPlayerTexture;
+import com.cobblemonislands.emotive.api.EmoteEvents;
 import com.cobblemonislands.emotive.config.ConfiguredAnimation;
 import com.cobblemonislands.emotive.config.ModConfig;
 import com.cobblemonislands.emotive.mixin.EntityAccessor;
@@ -122,6 +123,8 @@ public class GestureController {
             );
         }
 
+        EmoteEvents.STOP_EMOTE.invoker().onStopEmote(player);
+
         camera.destroy();
         GestureController.GESTURE_CAMS.remove(player.getUUID());
     }
@@ -171,6 +174,8 @@ public class GestureController {
             playerModel.getAppliedAspects().add(data.modelAspect());
             playerModel.updateAspects();
         }
+
+        EmoteEvents.START_EMOTE.invoker().onStartEmote(player);
 
         GestureCameraHolder gestureCameraHolder = new GestureCameraHolder(player, playerModel);
         GestureController.GESTURE_CAMS.put(player.getUUID(), gestureCameraHolder);
