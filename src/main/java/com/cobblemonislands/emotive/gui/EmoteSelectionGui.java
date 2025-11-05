@@ -127,8 +127,11 @@ public class EmoteSelectionGui extends LayeredGui {
             Util.clickSound(getPlayer());
 
             if (type == ClickType.MOUSE_LEFT) {
-                GestureController.onStart(getPlayer(), animation);
-                this.close();
+                var player = getPlayer();
+                GestureController.getOrCreateModelData(player).thenAccept(modelData -> {
+                    player.server.execute(() -> GestureController.onStart(player, animation, modelData));
+                    this.close();
+                });
             } else {
                 for (Map.Entry<ResourceLocation, ConfiguredAnimation> entry : Animations.all().entrySet()) {
                     if (entry.getValue() == animation) {

@@ -242,7 +242,9 @@ public final class EmotiveCommand {
                 return;
             }
 
-            ctx.getSource().getServer().execute(() -> GestureController.onStart(player, found));
+            GestureController.getOrCreateModelData(player).thenAccept(modelData -> {
+                player.server.execute(() -> GestureController.onStart(player, found, modelData));
+            });
         });
 
         return Command.SINGLE_SUCCESS;
