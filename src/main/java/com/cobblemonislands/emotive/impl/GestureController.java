@@ -13,8 +13,6 @@ import com.cobblemonislands.emotive.config.ModConfig;
 import com.cobblemonislands.emotive.mixin.EntityAccessor;
 import com.cobblemonislands.emotive.util.Util;
 import com.google.common.collect.ImmutableList;
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.ProfileLookupCallback;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import com.mojang.authlib.minecraft.MinecraftProfileTextures;
 import eu.pb4.polymer.core.api.utils.PolymerUtils;
@@ -44,46 +42,41 @@ public class GestureController {
     public static final Map<UUID, GestureCameraHolder> GESTURE_CAMS = new ConcurrentHashMap<>();
     public static final Map<UUID, ModelData> TEXTURE_CACHE = new ConcurrentHashMap<>();
 
-    public static void onConnect(ServerPlayer serverPlayer) {
-        // to have a cached model/texture of players
-        MinecraftServer server = Cobblemon.implementation.server();
-        if (server == null) return;
+    public static CompletableFuture<ModelData> getOrCreateModelData(ServerPlayer player) {
 
-        String username = serverPlayer.getScoreboardName();
-        server.getProfileRepository().findProfilesByNames(new String[]{username}, new ProfileLookupCallback() {
-            @Override
-            public void onProfileLookupSucceeded(GameProfile profile) {
-                GameProfile deepProfile = server.getSessionService().fetchProfile(profile.getId(), false) != null
-                        ? Objects.requireNonNull(server.getSessionService().fetchProfile(profile.getId(), false)).profile()
-                        : null;
+        var cached = TEXTURE_CACHE.getOrDefault(player.getUUID(), null);
+        
+        if(cached != null) {
+            return CompletableFuture.completedFuture(cached);
+        }
 
-                if (deepProfile == null) {
-                    Cobblemon.LOGGER.error("Failed to fetch profile for game profile name: {}", username);
-                    return;
-                }
+        MinecraftServer server = player.server;
 
-                MinecraftProfileTextures textures = server.getSessionService().getTextures(deepProfile);
-                MinecraftProfileTexture skin = textures.skin();
-                if (skin == null) return;
+        return CompletableFuture.supplyAsync(() -> {
 
-                String url = skin.getUrl();
-                String modelMeta = skin.getMetadata("model") != null ? skin.getMetadata("model") : "default";
-                NPCPlayerModelType model = NPCPlayerModelType.valueOf(Objects.requireNonNull(modelMeta).toUpperCase());
+            var gameProfile = player.getGameProfile();
 
-                try {
-                    var tex = new NPCPlayerTexture(new URI(url).toURL().openStream().readAllBytes(), model);
-                    var aspect = "model-" + model.name().toLowerCase();
-                    TEXTURE_CACHE.put(serverPlayer.getUUID(), new ModelData(tex, aspect));
-                } catch (IOException | URISyntaxException e) {
-                    throw new RuntimeException(e);
-                }
+            MinecraftProfileTextures textures = server.getSessionService().getTextures(gameProfile);
+            MinecraftProfileTexture skin = textures.skin();
+            if (skin == null) return null;
+
+            String url = skin.getUrl();
+            String modelMeta = skin.getMetadata("model") != null ? skin.getMetadata("model") : "default";
+            NPCPlayerModelType model = NPCPlayerModelType.valueOf(Objects.requireNonNull(modelMeta).toUpperCase());
+
+            try {
+                var tex = new NPCPlayerTexture(new URI(url).toURL().openStream().readAllBytes(), model);
+                var aspect = "model-" + model.name().toLowerCase();
+                var modelData = new ModelData(tex, aspect);
+                TEXTURE_CACHE.put(player.getUUID(), new ModelData(tex, aspect));
+                return modelData;
+            } catch (IOException | URISyntaxException e) {
+                Cobblemon.LOGGER.error("Could not load texture for {}", player.getName(), e);
+                return null;
             }
 
-            @Override
-            public void onProfileLookupFailed(String profileName, Exception exception) {
-                Cobblemon.LOGGER.error("Unable to load texture for game profile name: {}", username, exception);
-            }
         });
+
     }
 
     public static void onDisconnect(ServerPlayer serverPlayer) {
@@ -91,6 +84,7 @@ public class GestureController {
         if (cam != null) {
             onStop(cam);
         }
+        TEXTURE_CACHE.remove(serverPlayer.getUUID());
     }
 
     public static void onStop(ServerPlayer player) {
@@ -129,7 +123,7 @@ public class GestureController {
         GestureController.GESTURE_CAMS.remove(player.getUUID());
     }
 
-    public static void onStart(ServerPlayer player, ConfiguredAnimation animation) {
+    public static void onStart(ServerPlayer player, ConfiguredAnimation animation, ModelData data) {
         if (GestureController.GESTURE_CAMS.containsKey(player.getUUID())) // prevent spamming gestures
             return;
 
@@ -141,7 +135,7 @@ public class GestureController {
 
         NPCEntity playerModel = CobblemonEntities.NPC.create(player.level());
         assert playerModel != null;
-        ((EntityAccessor)(Entity)playerModel).invokeUnsetRemoved();
+        ((EntityAccessor) (Entity) playerModel).invokeUnsetRemoved();
         playerModel.noPhysics = true;
         playerModel.setNoGravity(true);
         playerModel.setMovable(false);
@@ -167,7 +161,6 @@ public class GestureController {
         playerModel.setYHeadRot(player.yHeadRot);
         playerModel.setYBodyRot(player.yHeadRot);
 
-        var data = TEXTURE_CACHE.get(player.getUUID());
         if (data != null) {
             playerModel.getEntityData().set(NPCEntity.Companion.getNPC_PLAYER_TEXTURE(), data.texture());
             playerModel.getData().setDirectly("player_texture_username", new StringValue(player.getScoreboardName()));
