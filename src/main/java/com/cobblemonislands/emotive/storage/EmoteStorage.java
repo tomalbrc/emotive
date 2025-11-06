@@ -9,6 +9,7 @@ import java.util.List;
  * Generic interface for storing and retrieving player emote data.
  */
 public interface EmoteStorage {
+
     enum Type {
         MARIADB,
         POSTGRESQL,
@@ -29,21 +30,23 @@ public interface EmoteStorage {
      */
     boolean remove(ServerPlayer player, ResourceLocation emote);
 
+    boolean addFav(ServerPlayer player, ResourceLocation emote);
+
+    boolean removeFav(ServerPlayer player, ResourceLocation element);
+
     /**
      * Checks if the player owns the specified emote.
      */
     boolean owns(ServerPlayer player, ResourceLocation emote);
 
     /**
-     * Gets the timestamp (in seconds) when the emote was added.
-     * Returns 0 if not found.
-     */
-    int timestamp(ServerPlayer player, ResourceLocation emote);
-
-    /**
      * Lists all stored emote keys for the player.
      */
     List<String> list(ServerPlayer player);
 
+    List<String> listFavs(ServerPlayer player);
+
     default void close() {}
+
+    default void invalidate(ServerPlayer serverPlayer) {}
 }

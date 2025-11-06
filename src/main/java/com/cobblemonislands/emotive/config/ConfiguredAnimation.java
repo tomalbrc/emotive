@@ -1,7 +1,6 @@
 package com.cobblemonislands.emotive.config;
 
 import com.cobblemonislands.emotive.util.TextUtil;
-import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -11,6 +10,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomModelData;
+
+import java.util.Map;
 
 public record ConfiguredAnimation(String title, ResourceLocation npcClass, String animationName, int duration, ResourceLocation item, Integer customModelData, boolean glint, String permission, Integer permissionLevel) {
     public static Style EMPTY = Style.EMPTY.withColor(ChatFormatting.WHITE).withUnderlined(false).withItalic(false).withObfuscated(false).withStrikethrough(false);
@@ -23,33 +24,21 @@ public record ConfiguredAnimation(String title, ResourceLocation npcClass, Strin
         else
             itemStack = BuiltInRegistries.ITEM.get(item).getDefaultInstance();
 
-        itemStack.set(DataComponents.ITEM_NAME, Component.empty().append(Component.empty().withStyle(EMPTY).append(TextUtil.parse(title))));
+        if (title != null) itemStack.set(DataComponents.ITEM_NAME, Component.empty().append(Component.empty().withStyle(EMPTY).append(TextUtil.parse(title))));
         if (customModelData != null)
             itemStack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(customModelData));
+
+        if (glint)
+            itemStack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
 
         return itemStack;
     }
 
-    public GuiElementBuilder guiElementBuilder() {
-        return guiElementBuilder(true);
+    public Map<String, String> placeholder() {
+        return Map.of("<duration>", duration(duration));
     }
 
-    public GuiElementBuilder guiElementBuilder(boolean playable) {
-        var builder = GuiElementBuilder.from(itemStack());
-        builder.addLoreLine(Component.empty());
-        builder.addLoreLine(Component.empty().append(Component.empty().withStyle(EMPTY).append(TextUtil.parse(String.format(ModConfig.getInstance().messages.emoteDurationTooltip, duration(duration))))));
-        if (playable) {
-            builder.addLoreLine(Component.empty());
-            builder.addLoreLine(Component.empty().append(Component.empty().withStyle(EMPTY).append(TextUtil.parse(ModConfig.getInstance().messages.emotePlayTooltip))));
-
-            builder.addLoreLine(Component.empty());
-            builder.addLoreLine(Component.empty().append(Component.empty().withStyle(EMPTY).append(TextUtil.parse(ModConfig.getInstance().messages.emoteGetItemTooltip))));
-        }
-        builder.glow(glint());
-        return builder;
-    }
-
-    private String duration(int duration) {
+    public String duration(int duration) {
         String formatted;
         if (duration == -1) {
             formatted = ModConfig.getInstance().messages.untilStopped;

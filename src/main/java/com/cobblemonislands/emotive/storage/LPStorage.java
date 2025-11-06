@@ -29,6 +29,7 @@ public class LPStorage implements EmoteStorage {
         return System.currentTimeMillis() / 1000L; // seconds
     }
 
+    @Override
     public boolean add(ServerPlayer player, ResourceLocation animation) {
         User user = luckPerms.getUserManager().getUser(player.getUUID());
         String key = String.format("%s.%s", Emotive.MODID, animation.toLanguageKey());
@@ -43,6 +44,7 @@ public class LPStorage implements EmoteStorage {
         return false;
     }
 
+    @Override
     public boolean remove(ServerPlayer player, ResourceLocation animation) {
         User user = luckPerms.getUserManager().getUser(player.getUUID());
         String key = String.format("%s.%s", Emotive.MODID, animation.toLanguageKey());
@@ -60,6 +62,7 @@ public class LPStorage implements EmoteStorage {
         return false;
     }
 
+    @Override
     public boolean owns(ServerPlayer player, ResourceLocation animation) {
         User user = luckPerms.getUserManager().getUser(player.getUUID());
         if (user == null) return false;
@@ -67,29 +70,60 @@ public class LPStorage implements EmoteStorage {
         return user.getCachedData().getMetaData().getMetaValue(key) != null;
     }
 
-    public int timestamp(ServerPlayer player, ResourceLocation animation) {
+    @Override
+    public List<String> list(ServerPlayer player) {
+        List<String> result = new ObjectArrayList<>();
         User user = luckPerms.getUserManager().getUser(player.getUUID());
-        if (user == null) return 0;
-
-        String key = String.format("%s.%s", Emotive.MODID, animation.toLanguageKey());
-        String val = user.getCachedData().getMetaData().getMetaValue(key);
-        if (val != null) {
-            try {
-                return Integer.parseInt(val);
-            } catch (NumberFormatException ignored) {
+        if (user != null) {
+            for (Map.Entry<String, List<String>> entry : user.getCachedData().getMetaData().getMeta().entrySet()) {
+                if (entry.getKey().startsWith(Emotive.MODID)) {
+                    result.add(entry.getKey().substring(Emotive.MODID.length()+1));
+                }
             }
         }
-        return 0;
+        return result;
     }
 
-    public List<String> list(ServerPlayer player) {
+    @Override
+    public boolean addFav(ServerPlayer player, ResourceLocation emote) {
+        if (!owns(player, emote)) return false;
+        User user = luckPerms.getUserManager().getUser(player.getUUID());
+        if (user == null) return false;
+
+        String favKey = "fav." + Emotive.MODID + "." + emote.toLanguageKey();
+        MetaNode node = MetaNode.builder(favKey, Long.toString(timestamp())).build();
+        user.data().clear(NodeType.META.predicate(mn -> mn.getMetaKey().equals(favKey)));
+        user.data().add(node);
+        luckPerms.getUserManager().saveUser(user);
+        return true;
+    }
+
+    @Override
+    public boolean removeFav(ServerPlayer player, ResourceLocation emote) {
+        User user = luckPerms.getUserManager().getUser(player.getUUID());
+        if (user == null) return false;
+
+        String favKey = "fav." + Emotive.MODID + "." + emote.toLanguageKey();
+        boolean[] removed = new boolean[]{false};
+        user.data().clear(NodeType.META.predicate(mn -> {
+            boolean eq = mn.getMetaKey().equals(favKey);
+            if (eq) removed[0] = true;
+            return eq;
+        }));
+        luckPerms.getUserManager().saveUser(user);
+        return removed[0];
+    }
+
+    @Override
+    public List<String> listFavs(ServerPlayer player) {
         List<String> result = new ObjectArrayList<>();
         User user = luckPerms.getUserManager().getUser(player.getUUID());
         if (user != null) {
             for (Map.Entry<String, List<String>> entry :
                     user.getCachedData().getMetaData().getMeta().entrySet()) {
-                if (entry.getKey().startsWith(Emotive.MODID)) {
-                    result.add(entry.getKey());
+                String key = entry.getKey();
+                if (key.startsWith("fav.")) {
+                    result.add(key.substring(4 + Emotive.MODID.length() + 1));
                 }
             }
         }

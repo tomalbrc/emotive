@@ -1,9 +1,9 @@
 package com.cobblemonislands.emotive.command;
 
+import com.cobblemonislands.emotive.configui.impl.selection.EmoteSelectionGui;
 import com.cobblemonislands.emotive.config.Animations;
 import com.cobblemonislands.emotive.config.ConfiguredAnimation;
 import com.cobblemonislands.emotive.config.ModConfig;
-import com.cobblemonislands.emotive.gui.EmoteSelectionGui;
 import com.cobblemonislands.emotive.impl.GestureController;
 import com.cobblemonislands.emotive.util.TextUtil;
 import com.mojang.brigadier.Command;
@@ -109,8 +109,9 @@ public final class EmotiveCommand {
         final ServerPlayer player = ctx.getSource().getPlayer();
         if (player == null) return 0;
 
-        final EmoteSelectionGui gui = new EmoteSelectionGui(player, false);
+        final var gui = new EmoteSelectionGui(player);
         gui.open();
+
         return Command.SINGLE_SUCCESS;
     }
 

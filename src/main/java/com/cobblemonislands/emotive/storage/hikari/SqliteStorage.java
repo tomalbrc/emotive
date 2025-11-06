@@ -17,16 +17,25 @@ public class SqliteStorage extends AbstractHikariStorage {
     public SqliteStorage(DatabaseConfig cfg) {
         super(Type.SQLITE, cfg);
 
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt1 = conn.prepareStatement(
                      "CREATE TABLE IF NOT EXISTS " + Emotive.MODID + "_emotes (" +
-                     "uuid TEXT NOT NULL," +
-                     "`key` TEXT NOT NULL," +
-                     "ts INTEGER NOT NULL," +
-                     "PRIMARY KEY (uuid, `key`))"
+                             "uuid TEXT NOT NULL," +
+                             "`key` TEXT NOT NULL," +
+                             "ts INTEGER NOT NULL," +
+                             "PRIMARY KEY (uuid, `key`))"
+             );
+             PreparedStatement stmt2 = conn.prepareStatement(
+                     "CREATE TABLE IF NOT EXISTS " + Emotive.MODID + "_emote_favourites (" +
+                             "uuid TEXT NOT NULL," +
+                             "`key` TEXT NOT NULL," +
+                             "ts INTEGER NOT NULL," +
+                             "PRIMARY KEY (uuid, `key`))"
              )) {
-            stmt.execute();
+            stmt1.execute();
+            stmt2.execute();
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to create emote table", e);
+            throw new RuntimeException("Failed to create emote or favourite table", e);
         }
     }
 
@@ -67,6 +76,38 @@ public class SqliteStorage extends AbstractHikariStorage {
     }
 
     @Override
+    public boolean addFav(ServerPlayer player, ResourceLocation emote) {
+        String uuid = player.getUUID().toString();
+        String key = Emotive.MODID + "." + emote.toLanguageKey();
+        long ts = currentTs();
+
+        String insert = "INSERT OR IGNORE INTO " + Emotive.MODID + "_emote_favourites (uuid, `key`, ts) VALUES (?, ?, ?)";
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(insert)) {
+            stmt.setString(1, uuid);
+            stmt.setString(2, key);
+            stmt.setLong(3, ts);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean removeFav(ServerPlayer player, ResourceLocation element) {
+        String uuid = player.getUUID().toString();
+        String key = Emotive.MODID + "." + element.toLanguageKey();
+
+        String delete = "DELETE FROM " + Emotive.MODID + "_emote_favourites WHERE uuid = ? AND `key` = ?";
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(delete)) {
+            stmt.setString(1, uuid);
+            stmt.setString(2, key);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    @Override
     public boolean owns(ServerPlayer player, ResourceLocation animation) {
         String uuid = player.getUUID().toString();
         String key = Emotive.MODID + "." + animation.toLanguageKey();
@@ -84,23 +125,6 @@ public class SqliteStorage extends AbstractHikariStorage {
     }
 
     @Override
-    public int timestamp(ServerPlayer player, ResourceLocation animation) {
-        String uuid = player.getUUID().toString();
-        String key = Emotive.MODID + "." + animation.toLanguageKey();
-
-        String query = "SELECT ts FROM " + Emotive.MODID + "_emotes WHERE uuid = ? AND `key` = ? LIMIT 1";
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setString(1, uuid);
-            stmt.setString(2, key);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) return rs.getInt("ts");
-            }
-        } catch (SQLException ignored) {
-        }
-        return 0;
-    }
-
-    @Override
     public List<String> list(ServerPlayer player) {
         String uuid = player.getUUID().toString();
 
@@ -111,7 +135,31 @@ public class SqliteStorage extends AbstractHikariStorage {
                 List<String> result = new ArrayList<>();
                 while (rs.next()) {
                     String k = rs.getString("key");
-                    if (k != null && k.startsWith(Emotive.MODID)) result.add(k);
+                    if (k != null && k.startsWith(Emotive.MODID + ".")) {
+                        result.add(k.substring(Emotive.MODID.length()+1));
+                    }
+                }
+                return result;
+            }
+        } catch (SQLException e) {
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public List<String> listFavs(ServerPlayer player) {
+        String uuid = player.getUUID().toString();
+
+        String query = "SELECT `key` FROM " + Emotive.MODID + "_emote_favourites WHERE uuid = ?";
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, uuid);
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<String> result = new ArrayList<>();
+                while (rs.next()) {
+                    String k = rs.getString("key");
+                    if (k != null && k.startsWith(Emotive.MODID + ".")) {
+                        result.add(k.substring(Emotive.MODID.length()+1));
+                    }
                 }
                 return result;
             }

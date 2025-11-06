@@ -15,16 +15,25 @@ public class PostgresStorage extends AbstractHikariStorage {
     public PostgresStorage(DatabaseConfig cfg) {
         super(Type.POSTGRESQL, cfg);
 
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt1 = conn.prepareStatement(
                      "CREATE TABLE IF NOT EXISTS " + Emotive.MODID + "_emotes (" +
-                     "uuid TEXT NOT NULL," +
-                     "key TEXT NOT NULL," +
-                     "ts BIGINT NOT NULL," +
-                     "PRIMARY KEY (uuid, key))"
+                             "uuid TEXT NOT NULL," +
+                             "key TEXT NOT NULL," +
+                             "ts BIGINT NOT NULL," +
+                             "PRIMARY KEY (uuid, key))"
+             );
+             PreparedStatement stmt2 = conn.prepareStatement(
+                     "CREATE TABLE IF NOT EXISTS " + Emotive.MODID + "_emote_favourites (" +
+                             "uuid TEXT NOT NULL," +
+                             "key TEXT NOT NULL," +
+                             "ts BIGINT NOT NULL," +
+                             "PRIMARY KEY (uuid, key))"
              )) {
-            stmt.execute();
+            stmt1.execute();
+            stmt2.execute();
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to create emote table", e);
+            throw new RuntimeException("Failed to create emote or favourites table", e);
         }
     }
 
@@ -38,7 +47,6 @@ public class PostgresStorage extends AbstractHikariStorage {
         String key = Emotive.MODID + "." + animation.toLanguageKey();
         long ts = currentTs();
 
-        // "insert if not exists"
         String insert = "INSERT INTO " + Emotive.MODID + "_emotes (uuid, key, ts) " +
                 "VALUES (?, ?, ?) ON CONFLICT (uuid, key) DO NOTHING";
 
@@ -61,6 +69,13 @@ public class PostgresStorage extends AbstractHikariStorage {
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(delete)) {
             stmt.setString(1, uuid);
             stmt.setString(2, key);
+
+            String deleteFav = "DELETE FROM " + Emotive.MODID + "_emote_favourites WHERE uuid = ? AND key = ?";
+            try (PreparedStatement stmtFav = conn.prepareStatement(deleteFav)) {
+                stmtFav.setString(1, uuid);
+                stmtFav.setString(2, key);
+                stmtFav.executeUpdate();
+            }
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             return false;
@@ -85,22 +100,6 @@ public class PostgresStorage extends AbstractHikariStorage {
     }
 
     @Override
-    public int timestamp(ServerPlayer player, ResourceLocation animation) {
-        String uuid = player.getUUID().toString();
-        String key = Emotive.MODID + "." + animation.toLanguageKey();
-
-        String query = "SELECT ts FROM " + Emotive.MODID + "_emotes WHERE uuid = ? AND key = ? LIMIT 1";
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setString(1, uuid);
-            stmt.setString(2, key);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) return rs.getInt("ts");
-            }
-        } catch (SQLException ignored) {}
-        return 0;
-    }
-
-    @Override
     public List<String> list(ServerPlayer player) {
         String uuid = player.getUUID().toString();
 
@@ -111,7 +110,71 @@ public class PostgresStorage extends AbstractHikariStorage {
                 List<String> result = new ArrayList<>();
                 while (rs.next()) {
                     String k = rs.getString("key");
-                    if (k != null && k.startsWith(Emotive.MODID)) result.add(k);
+                    if (k != null && k.startsWith(Emotive.MODID + ".")) {
+                        result.add(k.substring(Emotive.MODID.length()+1));
+                    }
+                }
+                return result;
+            }
+        } catch (SQLException e) {
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public boolean addFav(ServerPlayer player, ResourceLocation emote) {
+        String uuid = player.getUUID().toString();
+        String key = Emotive.MODID + "." + emote.toLanguageKey();
+
+        if (!owns(player, emote)) {
+            return false;
+        }
+
+        long ts = currentTs();
+        String insertFav = "INSERT INTO " + Emotive.MODID + "_emote_favourites (uuid, key, ts) " +
+                "VALUES (?, ?, ?) ON CONFLICT (uuid, key) DO NOTHING";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(insertFav)) {
+            stmt.setString(1, uuid);
+            stmt.setString(2, key);
+            stmt.setLong(3, ts);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean removeFav(ServerPlayer player, ResourceLocation element) {
+        String uuid = player.getUUID().toString();
+        String key = Emotive.MODID + "." + element.toLanguageKey();
+
+        String deleteFav = "DELETE FROM " + Emotive.MODID + "_emote_favourites WHERE uuid = ? AND key = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(deleteFav)) {
+            stmt.setString(1, uuid);
+            stmt.setString(2, key);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public List<String> listFavs(ServerPlayer player) {
+        String uuid = player.getUUID().toString();
+
+        String query = "SELECT key FROM " + Emotive.MODID + "_emote_favourites WHERE uuid = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, uuid);
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<String> result = new ArrayList<>();
+                while (rs.next()) {
+                    String k = rs.getString("key");
+                    if (k != null && k.startsWith(Emotive.MODID + ".")) {
+                        result.add(k.substring(Emotive.MODID.length()+1));
+                    }
                 }
                 return result;
             }

@@ -33,7 +33,7 @@ public record ConfiguredCategory(
         else
             itemStack = BuiltInRegistries.ITEM.get(item).getDefaultInstance();
 
-        itemStack.set(DataComponents.ITEM_NAME, Component.empty().append(Component.empty().withStyle(ConfiguredAnimation.EMPTY).append(TextUtil.parse(title))));
+        if (title != null) itemStack.set(DataComponents.ITEM_NAME, Component.empty().append(Component.empty().withStyle(ConfiguredAnimation.EMPTY).append(TextUtil.parse(title))));
         if (customModelData != null)
             itemStack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(customModelData));
 
