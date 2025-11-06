@@ -1,5 +1,6 @@
 package com.cobblemonislands.emotive.command;
 
+import com.cobblemonislands.emotive.config.Categories;
 import com.cobblemonislands.emotive.configui.impl.selection.EmoteSelectionGui;
 import com.cobblemonislands.emotive.config.Animations;
 import com.cobblemonislands.emotive.config.ConfiguredAnimation;
@@ -72,6 +73,8 @@ public final class EmotiveCommand {
                 .requires(requirePerm.apply("emotive.reload"))
                 .executes(ctx -> {
                     ModConfig.load();
+                    Animations.load();
+                    Categories.load();
                     ctx.getSource().sendSuccess(() -> TextUtil.parse(ModConfig.getInstance().messages.configReloaded), false);
                     return Command.SINGLE_SUCCESS;
                 }));
@@ -243,9 +246,7 @@ public final class EmotiveCommand {
                 return;
             }
 
-            GestureController.getOrCreateModelData(player).thenAccept(modelData -> {
-                player.server.execute(() -> GestureController.onStart(player, found, modelData));
-            });
+            GestureController.getOrCreateModelData(player).thenAccept(modelData -> player.server.execute(() -> GestureController.onStart(player, found, modelData)));
         });
 
         return Command.SINGLE_SUCCESS;
