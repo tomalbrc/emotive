@@ -8,6 +8,7 @@ import com.cobblemonislands.emotive.config.Animations;
 import com.cobblemonislands.emotive.config.ConfiguredAnimation;
 import com.cobblemonislands.emotive.config.ModConfig;
 import com.cobblemonislands.emotive.impl.GestureController;
+import com.cobblemonislands.emotive.util.Util;
 import eu.pb4.sgui.api.ClickType;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import net.minecraft.resources.ResourceLocation;
@@ -26,6 +27,8 @@ class EmoteListType implements ListGuiElementType<GuiElementData, ConfiguredAnim
         ItemStack stack = element.itemStack().copy();
         var id = findAnimationId(element);
         return data.decorate(new GuiElementBuilder(stack), element.placeholder()).setCallback((slot, click, action) -> {
+            Util.clickSound(gui.getPlayer());
+
             if (click == ClickType.MOUSE_LEFT) {
                 var player = gui.getPlayer();
                 GestureController.getOrCreateModelData(player).thenAccept(modelData -> {
@@ -33,7 +36,7 @@ class EmoteListType implements ListGuiElementType<GuiElementData, ConfiguredAnim
                     gui.close();
                 });
             } else if (click == ClickType.MOUSE_LEFT_SHIFT) {
-                if (ModConfig.getInstance().getStorage().addFav(gui.getPlayer(), id))
+                if (ModConfig.getInstance().getStorage().listFavs(gui.getPlayer()).size() < gui.getPageSize("favourites") && ModConfig.getInstance().getStorage().addFav(gui.getPlayer(), id))
                     gui.setPage("favourites", 0);
             } else {
                 var gui2 = new ConfirmationGui(gui.getPlayer(), id);

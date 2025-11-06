@@ -10,6 +10,7 @@ import com.cobblemonislands.emotive.configui.api.GuiElementData;
 import com.cobblemonislands.emotive.configui.api.GuiTypeRegistry;
 import com.cobblemonislands.emotive.configui.impl.selection.EmoteSelectionGui;
 import com.cobblemonislands.emotive.configui.impl.selection.EmptyGuiType;
+import com.cobblemonislands.emotive.util.Util;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -39,6 +40,8 @@ public class ConfirmationGui extends ConfiguredGui<GuiElementData, ConfiguredAni
     }
 
     public void confirm() {
+        Util.clickSound(this.getPlayer());
+
         if (ModConfig.getInstance().getStorage().remove(player, emote)) {
             var anim = Animations.all().get(emote);
             if (anim == null) {

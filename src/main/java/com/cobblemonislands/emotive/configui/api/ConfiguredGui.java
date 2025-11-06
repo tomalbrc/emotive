@@ -131,6 +131,8 @@ public class ConfiguredGui<T extends GuiElementData, E> extends SimpleGui {
     }
 
     public void nextPage(String typeName) {
+        Util.clickSound(this.getPlayer());
+
         List<Integer> slots = regionSlots.getOrDefault(typeName, Collections.emptyList());
         if (slots.isEmpty()) return;
 
@@ -151,6 +153,8 @@ public class ConfiguredGui<T extends GuiElementData, E> extends SimpleGui {
     }
 
     public void previousPage(String typeName) {
+        Util.clickSound(this.getPlayer());
+
         int page = currentPage.getOrDefault(typeName, 0);
         if (page <= 0) return;
         List<Integer> slots = regionSlots.getOrDefault(typeName, Collections.emptyList());
@@ -198,6 +202,7 @@ public class ConfiguredGui<T extends GuiElementData, E> extends SimpleGui {
     }
 
     public void back() {
+        Util.clickSound(this.getPlayer());
         this.close();
     }
 }

@@ -7,6 +7,7 @@ import com.cobblemonislands.emotive.config.Animations;
 import com.cobblemonislands.emotive.config.ConfiguredAnimation;
 import com.cobblemonislands.emotive.config.ModConfig;
 import com.cobblemonislands.emotive.impl.GestureController;
+import com.cobblemonislands.emotive.util.Util;
 import eu.pb4.sgui.api.ClickType;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import net.minecraft.resources.ResourceLocation;
@@ -25,6 +26,8 @@ class EmoteListType implements ListGuiElementType<GuiElementData, ConfiguredAnim
         ItemStack stack = element.itemStack().copy();
         var id = findAnimationId(element);
         return data.decorate(new GuiElementBuilder(stack).setCallback((slot, click, action) -> {
+            Util.clickSound(gui.getPlayer());
+
             if (click == ClickType.MOUSE_LEFT && ModConfig.getInstance().getStorage().owns(gui.getPlayer(), id)) {
                 var player = gui.getPlayer();
                 GestureController.getOrCreateModelData(player).thenAccept(modelData -> {
