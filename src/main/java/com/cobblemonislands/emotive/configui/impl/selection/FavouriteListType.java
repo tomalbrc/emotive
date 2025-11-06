@@ -1,5 +1,6 @@
 package com.cobblemonislands.emotive.configui.impl.selection;
 
+import com.cobblemonislands.emotive.config.Animations;
 import com.cobblemonislands.emotive.configui.api.ConfiguredGui;
 import com.cobblemonislands.emotive.configui.api.GuiElementData;
 import com.cobblemonislands.emotive.configui.api.ListGuiElementType;
@@ -17,13 +18,17 @@ class FavouriteListType implements ListGuiElementType<GuiElementData, Configured
 
     @Override
     public GuiElementBuilder buildEntry(ConfiguredGui<GuiElementData, ConfiguredAnimation> gui, GuiElementData data, ConfiguredAnimation element) {
+        var id = EmoteListType.findAnimationId(element);
         return data.decorate(new GuiElementBuilder(element.itemStack()), element.placeholder()).setCallback((s, c, a) -> {
             if (c == eu.pb4.sgui.api.ClickType.MOUSE_LEFT_SHIFT) {
-                ModConfig.getInstance().getStorage().removeFav(gui.getPlayer(), EmoteListType.findAnimationId(element));
+                ModConfig.getInstance().getStorage().removeFav(gui.getPlayer(), id);
                 gui.setPage(data.type(), 0);
             } else {
-                GestureController.onStart(gui.getPlayer(), element);
-                gui.close();
+                var player = gui.getPlayer();
+                GestureController.getOrCreateModelData(player).thenAccept(modelData -> {
+                    player.server.execute(() -> GestureController.onStart(player, Animations.all().get(id), modelData));
+                    gui.close();
+                });
             }
         });
     }

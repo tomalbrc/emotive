@@ -24,15 +24,19 @@ class EmoteListType implements ListGuiElementType<GuiElementData, ConfiguredAnim
     @Override
     public GuiElementBuilder buildEntry(ConfiguredGui<GuiElementData, ConfiguredAnimation> gui, GuiElementData data, ConfiguredAnimation element) {
         ItemStack stack = element.itemStack().copy();
+        var id = findAnimationId(element);
         return data.decorate(new GuiElementBuilder(stack), element.placeholder()).setCallback((slot, click, action) -> {
             if (click == ClickType.MOUSE_LEFT) {
-                GestureController.onStart(gui.getPlayer(), element);
-                gui.close();
+                var player = gui.getPlayer();
+                GestureController.getOrCreateModelData(player).thenAccept(modelData -> {
+                    player.server.execute(() -> GestureController.onStart(player, Animations.all().get(id), modelData));
+                    gui.close();
+                });
             } else if (click == ClickType.MOUSE_LEFT_SHIFT) {
-                if (ModConfig.getInstance().getStorage().addFav(gui.getPlayer(), findAnimationId(element)))
+                if (ModConfig.getInstance().getStorage().addFav(gui.getPlayer(), id))
                     gui.setPage("favourites", 0);
             } else {
-                var gui2 = new ConfirmationGui(gui.getPlayer(), findAnimationId(element));
+                var gui2 = new ConfirmationGui(gui.getPlayer(), id);
                 gui2.open();
             }
         });
