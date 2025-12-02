@@ -134,7 +134,7 @@ public class GestureController {
         }
 
         NPCEntity playerModel = CobblemonEntities.NPC.create(player.level());
-        assert playerModel != null;
+        if (playerModel == null) return;
         ((EntityAccessor) (Entity) playerModel).invokeUnsetRemoved();
         playerModel.noPhysics = true;
         playerModel.setNoGravity(true);
@@ -142,7 +142,7 @@ public class GestureController {
         playerModel.setLeashable(false);
         playerModel.setAllowProjectileHits(false);
         playerModel.setInvulnerable(true);
-        playerModel.setNpc(Objects.requireNonNull(NPCClasses.INSTANCE.getByIdentifier(animation.npcClass())));
+        playerModel.setNpc(Objects.requireNonNull(NPCClasses.getByIdentifier(animation.npcClass())));
         playerModel.moveTo(player.position(), player.yHeadRot, player.getXRot());
         playerModel.setHideNameTag(!ModConfig.getInstance().showPlayerName);
         playerModel.setCustomName(player.getDisplayName());
