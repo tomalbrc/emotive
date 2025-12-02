@@ -44,6 +44,8 @@ public class GestureCameraHolder extends ElementHolder {
     private float yaw;
     private boolean dirtyRot = true;
 
+    private int age = 0;
+
     public GestureCameraHolder(ServerPlayer player, NPCEntity playerModel) {
         super();
 
@@ -51,7 +53,7 @@ public class GestureCameraHolder extends ElementHolder {
         this.origin = player.position();
         this.player = player;
         this.updatePos();
-        this.cameraElement.setTeleportDuration(2);
+        this.cameraElement.setTeleportDuration(8);
         this.cameraElement.ignorePositionUpdates();
         this.addElement(cameraElement);
     }
@@ -106,6 +108,12 @@ public class GestureCameraHolder extends ElementHolder {
         } else {
             this.updatePos();
         }
+
+        if (age >= 8) {
+            this.cameraElement.setTeleportDuration(2);
+        }
+
+        age++;
     }
 
     @Override
