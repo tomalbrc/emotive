@@ -17,71 +17,236 @@ A Minecraft mod that adds emotes using Cobblemon NPCs.
 ```json
 {
   "debug": false,
+  "fancy-hud": true,
   "command": "emotive",
   "show-player-name": true,
-  "storage-type": "MARIADB",
+  "messages": {
+    "player-not-found": "Player not found",
+    "until-stopped": "Until stopped",
+    "no-permission": "You do not have that emote.",
+    "unknown-emote": "Unknown emote: %s",
+    "config-reloaded": "Emotive config reloaded!",
+    "only-player": "This command can only be run by a player!",
+    "component-tooltip": "Emote: %s",
+    "added": "%s was added to your emotes!"
+  },
+  "permissions": {
+    "emotive.direct": 2,
+    "emotive.command": 2,
+    "emotive.list": 2,
+    "emotive.remove": 2,
+    "emotive.reload": 2,
+    "emotive.give": 2
+  },
+  "selection-gui": {
+    "title": "Emote Selectionxxx",
+    "layout": [
+      "         ",
+      "BEEEEEEE ",
+      "PEEEEEEEN",
+      " EEEEEEE ",
+      "         ",
+      " FFFFFFF "
+    ],
+    "keys": {
+      "N": {
+        "type": "next_page",
+        "title": "Next Page",
+        "item": {
+          "id": "minecraft:arrow",
+          "count": 1
+        },
+        "lore": [],
+        "alt-lore": [],
+        "glint": false
+      },
+      "B": {
+        "type": "browse",
+        "title": "Browse all Emotes",
+        "item": {
+          "id": "minecraft:chest",
+          "count": 1
+        },
+        "lore": [],
+        "alt-lore": [],
+        "glint": false
+      },
+      " ": {
+        "type": "empty",
+        "lore": [],
+        "alt-lore": [],
+        "glint": false
+      },
+      "P": {
+        "type": "prev_page",
+        "title": "Previous Page",
+        "item": {
+          "id": "minecraft:arrow",
+          "count": 1
+        },
+        "lore": [],
+        "alt-lore": [],
+        "glint": false
+      },
+      "E": {
+        "type": "emotes",
+        "item": {
+          "id": "minecraft:emerald",
+          "count": 1
+        },
+        "lore": [
+          "",
+          "<gold>⌚</gold> Duration: <duration>",
+          "<green>▶</green> Press <keybind:key.attack> to play",
+          " ",
+          "<color:#800080>↔</color> Press <keybind:key.use> to get as item",
+          "",
+          "<color:#800080>↔</color> Press <keybind:key.sneak> + <keybind:key.attack> to add to favourites"
+        ],
+        "alt-lore": [],
+        "glint": false
+      },
+      "F": {
+        "type": "favourites",
+        "item": {
+          "id": "minecraft:diamond",
+          "count": 1
+        },
+        "lore": [
+          "<gold>⌚</gold> Duration: <duration>",
+          "<green>▶</green> Press <keybind:key.attack> to play",
+          "<color:#800080>↔</color> Press <keybind:key.sneak> + <keybind:key.attack> to remove from favourites"
+        ],
+        "alt-lore": [],
+        "glint": false
+      }
+    },
+    "manipulate-player-slots": false
+  },
+  "browse-gui": {
+    "title": "Browse Emotes",
+    "layout": [
+      "B        ",
+      " EEEEEEE ",
+      "PEEEEEEEN",
+      " EEEEEEE ",
+      " EEEEEEE ",
+      "         "
+    ],
+    "keys": {
+      " ": {
+        "type": "empty",
+        "lore": [],
+        "alt-lore": [],
+        "glint": false
+      },
+      "B": {
+        "type": "back",
+        "title": "Back",
+        "item": {
+          "id": "minecraft:arrow",
+          "count": 1
+        },
+        "lore": [],
+        "alt-lore": [],
+        "glint": false
+      },
+      "N": {
+        "type": "next_page",
+        "title": "Next Page",
+        "item": {
+          "id": "minecraft:arrow",
+          "count": 1
+        },
+        "lore": [],
+        "alt-lore": [],
+        "glint": false
+      },
+      "E": {
+        "type": "emotes",
+        "item": {
+          "id": "minecraft:emerald",
+          "count": 1
+        },
+        "lore": [
+          "",
+          "<gold>You do not own this emote!"
+        ],
+        "alt-lore": [
+          "",
+          "<gold>⌚</gold> Duration: <duration>",
+          "<green>You own this emote!"
+        ],
+        "glint": false
+      },
+      "P": {
+        "type": "prev_page",
+        "title": "Previous Page",
+        "item": {
+          "id": "minecraft:arrow",
+          "count": 1
+        },
+        "lore": [],
+        "alt-lore": [],
+        "glint": false
+      }
+    },
+    "manipulate-player-slots": false
+  },
+  "confirmation-gui": {
+    "title": "Confirm",
+    "layout": [
+      " C     A "
+    ],
+    "keys": {
+      "C": {
+        "type": "cancel",
+        "title": "Cancel",
+        "item": {
+          "id": "minecraft:red_concrete",
+          "count": 1
+        },
+        "lore": [],
+        "alt-lore": [],
+        "glint": false
+      },
+      " ": {
+        "type": "empty",
+        "lore": [],
+        "alt-lore": [],
+        "glint": false
+      },
+      "A": {
+        "type": "confirm",
+        "title": "Confirm",
+        "item": {
+          "id": "minecraft:lime_concrete",
+          "count": 1
+        },
+        "lore": [],
+        "alt-lore": [],
+        "glint": false
+      }
+    },
+    "manipulate-player-slots": false
+  },
+  "storage-type": "SQLITE",
   "database": {
     "host": "localhost",
     "port": 3306,
     "user": "username",
     "password": "secret",
-    "database": "emotes_db",
     "max-pool-size": 10,
-    "ssl-enabled": false
+    "ssl-enabled": false,
+    "database-name": "cosmetic",
+    "connection-timeout": 30000,
+    "idle-timeout": 600000,
+    "keepalive-time": 300000,
+    "validation-timeout": 5000,
+    "use-srv": false
   },
   "mongo-db-collection": "emotes",
-  "messages": {
-    "player-not-found": "Player not found",
-    "back": "Back",
-    "until-stopped": "Until stopped",
-    "browse": "Browse All Emotes",
-    "no-permission": "You do not have that emote.",
-    "unknown-emote": "Unknown emote: %s",
-    "config-reloaded": "Emotive config reloaded!",
-    "only-player": "This command can only be run by a player!",
-    "emote-duration-tooltip": "<gold>⌚</gold> Duration: %s",
-    "emote-play-tooltip": "<green>▶</green> Press <keybind:key.attack> to play",
-    "prev": "Previous Page",
-    "next": "Next Page"
-  },
-  "permissions": {
-    "emotive.command": 2,
-    "emotive.give": 2,
-    "emotive.list": 2,
-    "emotive.remove": 2,
-    "emotive.reload": 2,
-    "emotive.direct": 2
-  },
-  "gui": {
-    "add-back-button": true,
-    "back-button-item": "minecraft:arrow",
-    "back-button-location": {
-      "x": 1,
-      "y": 1
-    },
-    "selection-menu-height": 6,
-    "selection-menu-title": "Select Emote",
-    "prev-button-item": "minecraft:arrow",
-    "next-button-item": "minecraft:arrow",
-    "prev-button-location": {
-      "x": 8,
-      "y": 6
-    },
-    "next-button-location": {
-      "x": 9,
-      "y": 6
-    },
-    "browse-menu-height": 6,
-    "browse-menu-title": "Browse Emotes",
-    "enable-confirmation-menu": true,
-    "confirmation-menu-title": "Confirm",
-    "add-browse-button": true,
-    "browse-button-item": "minecraft:book",
-    "browse-button-location": {
-      "x": 1,
-      "y": 6
-    }
-  }
+  "mongo-db-collection-favourites": "emotes_favourites"
 }
 ```
 
@@ -98,18 +263,30 @@ A Minecraft mod that adds emotes using Cobblemon NPCs.
 * `storage-type`: Can be `LPMETA`, `MONGODB`, `MARIADB`, `POSTGRESQL`, or `SQLITE`
 * `database`: Defines connection details for databases
 * `mongo-db-collection`: MongoDB collection name for emote data
+* `mongo-db-collection-favourites`: Collection for the fav selection
 
 **GUI:**
+
+`confirmation-gui`, `selection-gui`, `browse-gui`:
 
 * Customize button positions, items, and menu layouts
 * Adjust menu heights and titles
 * Toggle confirmation menus
 
-** Permissions: **
+Available key types: 
+
+- `empty`
+- `emotes`
+- `next_page`: Next page
+- `prev_page`: Previous page
+- `back`: Back button, returns to previous menu
+- `favourites`: a favourite
+
+**Permissions:**
 
 Allows to assign vanilla permission levels for the luckperm nodes.
 
-** Messages: **
+**Messages:**
 
 Player facing messages / strings
 
