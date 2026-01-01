@@ -1,5 +1,6 @@
 package com.cobblemonislands.emotive.mixin;
 
+import com.cobblemonislands.emotive.Emotive;
 import com.cobblemonislands.emotive.component.ModComponents;
 import com.cobblemonislands.emotive.config.Animations;
 import com.cobblemonislands.emotive.config.ModConfig;
@@ -32,6 +33,14 @@ public abstract class ServerGamePacketListenerImplMixin {
                 GestureController.onStop(camera);
             }
 
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "handlePlayerAction", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;resetLastActionTime()V"), cancellable = true)
+    private void emotive$handleAction(ServerboundPlayerActionPacket serverboundPlayerActionPacket, CallbackInfo ci) {
+        if (serverboundPlayerActionPacket.getAction() == ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND && player.isShiftKeyDown()) {
+            Emotive.openHud(player);
             ci.cancel();
         }
     }

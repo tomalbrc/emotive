@@ -1,7 +1,9 @@
 package com.cobblemonislands.emotive.util;
 
+import com.cobblemonislands.emotive.Emotive;
 import com.mojang.datafixers.util.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -13,6 +15,10 @@ import net.minecraft.world.item.ItemStack;
 import java.util.List;
 
 public class Util {
+    public static ResourceLocation id(String path) {
+        return ResourceLocation.fromNamespaceAndPath(Emotive.MODID, path);
+    }
+
     public static List<Pair<EquipmentSlot, ItemStack>> getEquipment(LivingEntity entity, boolean empty) {
         List<Pair<EquipmentSlot, ItemStack>> equipment = new ObjectArrayList<>();
 

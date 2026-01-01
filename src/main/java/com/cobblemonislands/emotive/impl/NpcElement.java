@@ -6,6 +6,7 @@ import com.cobblemon.mod.common.entity.npc.NPCPlayerTexture;
 import com.cobblemon.mod.common.net.messages.client.animation.PlayPosableAnimationPacket;
 import com.cobblemon.mod.common.net.messages.client.effect.RunPosableMoLangPacket;
 import com.cobblemon.mod.common.net.messages.client.spawn.SpawnNPCPacket;
+import com.cobblemon.mod.fabric.CobblemonFabric;
 import com.cobblemon.mod.fabric.net.CobblemonFabricNetworkManager;
 import com.cobblemonislands.emotive.config.ConfiguredAnimation;
 import eu.pb4.placeholders.api.TextParserUtils;
@@ -25,6 +26,8 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public class NpcElement extends GenericEntityElement {
@@ -49,39 +52,39 @@ public class NpcElement extends GenericEntityElement {
     public void startWatching(ServerPlayer player, Consumer<Packet<ClientGamePacketListener>> packetConsumer) {
         super.startWatching(player, packetConsumer);
 
-        player.server.execute(() -> {
-            Set<String> aspects = new HashSet<>(config.aspects());
-            aspects.add(modelData.modelAspect());
+        Set<String> aspects = new HashSet<>(config.aspects());
+        aspects.add(modelData.modelAspect());
 
-            var vanillaSpawnPacket = new ClientboundAddEntityPacket(npc, npcUUID, this.getHolder().getPos().x, this.getHolder().getPos().y, this.getHolder().getPos().z, 0, getYaw(), CobblemonEntities.NPC, 0, Vec3.ZERO, getYaw());
-            var packet = new SpawnNPCPacket(
-                    config.npcClass(), // npcClass
-                    config.resourceIdentifier(), // resourceIdentifier
-                    aspects, // aspects
-                    config.level(), // level
-                    Set.of(),
-                    TextParserUtils.formatText(config.npcName()), // name
-                    config.poseType(),
-                    new NPCPlayerTexture(modelData.texture().getTexture(), NPCPlayerModelType.DEFAULT),
-                    config.hideNametag(), // hide nametag
-                    config.width(), // hitbox w
-                    config.height(), // hitbox h
-                    config.eyeHeight(), // hitbox eyeHeight
-                    config.hitboxScale(), // hitbox scale
-                    config.renderScale(), // render scale
-                    vanillaSpawnPacket
-            );
+        var vanillaSpawnPacket = new ClientboundAddEntityPacket(npc, npcUUID, this.getHolder().getPos().x, this.getHolder().getPos().y, this.getHolder().getPos().z, 0, getYaw(), CobblemonEntities.NPC, 0, Vec3.ZERO, getYaw());
+        var packet = new SpawnNPCPacket(
+                config.npcClass(), // npcClass
+                config.resourceIdentifier(), // resourceIdentifier
+                aspects, // aspects
+                config.level(), // level
+                Set.of(),
+                TextParserUtils.formatText(config.npcName()), // name
+                config.poseType(),
+                new NPCPlayerTexture(modelData.texture().getTexture(), NPCPlayerModelType.DEFAULT),
+                config.hideNametag(), // hide nametag
+                config.width(), // hitbox w
+                config.height(), // hitbox h
+                config.eyeHeight(), // hitbox eyeHeight
+                config.hitboxScale(), // hitbox scale
+                config.renderScale(), // render scale
+                vanillaSpawnPacket
+        );
 
-            CobblemonFabricNetworkManager.INSTANCE.sendPacketToPlayer(player, packet);
+        CobblemonFabricNetworkManager.INSTANCE.sendPacketToPlayer(player, packet);
 
-            if (config.animationName() != null) {
+        var p2 = new RunPosableMoLangPacket(npc, Set.of("player_texture_username=" + player.getScoreboardName()));
+        CobblemonFabricNetworkManager.INSTANCE.sendPacketToPlayer(player, p2);
+
+        CompletableFuture.runAsync(() -> {
+            if (!player.hasDisconnected() && config.animationName() != null) {
                 var animPacket = new PlayPosableAnimationPacket(npc, Set.of(config.animationName()), config.expressions());
                 CobblemonFabricNetworkManager.INSTANCE.sendPacketToPlayer(player, animPacket);
             }
-
-            var p2 = new RunPosableMoLangPacket(npc, Set.of("player_texture_username=" + player.getScoreboardName()));
-            CobblemonFabricNetworkManager.INSTANCE.sendPacketToPlayer(player, p2);
-        });
+        }, CompletableFuture.delayedExecutor(50, TimeUnit.MILLISECONDS, CobblemonFabric.INSTANCE.server()));
     }
 
     @Override
