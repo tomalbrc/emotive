@@ -361,6 +361,18 @@ Organize emotes into categories:
 }
 ```
 
+## Fancy HUD:
+
+- The fancy hud (triggered by Shift+F) requires bbmodels with the animations specified in your config, as well as 256x256 png renders named after the animation name ("wave.png").
+- The files will be loaded from `config/emotive/models/`
+    - `config/emotive/models/wave.png`
+    - `config/emotive/models/mymodel.bbmodel` <- contains an animation named "wave"
+
+
+BbModel, AjModel, AjBlueprint files are supported.
+
+The images will be copied into the resourcepack and a font will be generated in `assets/emotive/font/emotes.json`
+
 ## Commands
 
 * `/emotive` - Open emote menu
