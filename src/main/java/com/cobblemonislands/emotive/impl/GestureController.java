@@ -1,16 +1,10 @@
 package com.cobblemonislands.emotive.impl;
 
-import com.bedrockk.molang.runtime.value.StringValue;
 import com.cobblemon.mod.common.Cobblemon;
-import com.cobblemon.mod.common.CobblemonEntities;
-import com.cobblemon.mod.common.api.npc.NPCClasses;
-import com.cobblemon.mod.common.entity.npc.NPCEntity;
 import com.cobblemon.mod.common.entity.npc.NPCPlayerModelType;
 import com.cobblemon.mod.common.entity.npc.NPCPlayerTexture;
 import com.cobblemonislands.emotive.api.EmoteEvents;
 import com.cobblemonislands.emotive.config.ConfiguredAnimation;
-import com.cobblemonislands.emotive.config.ModConfig;
-import com.cobblemonislands.emotive.mixin.EntityAccessor;
 import com.cobblemonislands.emotive.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
@@ -26,9 +20,6 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
 
 import java.io.IOException;
 import java.net.URI;
@@ -127,56 +118,13 @@ public class GestureController {
         if (GestureController.GESTURE_CAMS.containsKey(player.getUUID())) // prevent spamming gestures
             return;
 
-        // destroy any previous gestures
-        GestureCameraHolder camera = GestureController.GESTURE_CAMS.get(player.getUUID());
-        if (camera != null) {
-            camera.destroy();
-        }
-
-        NPCEntity playerModel = CobblemonEntities.NPC.create(player.level());
-        if (playerModel == null) return;
-        ((EntityAccessor) (Entity) playerModel).invokeUnsetRemoved();
-        playerModel.noPhysics = true;
-        playerModel.setNoGravity(true);
-        playerModel.setMovable(false);
-        playerModel.setLeashable(false);
-        playerModel.setAllowProjectileHits(false);
-        playerModel.setInvulnerable(true);
-        playerModel.setNpc(Objects.requireNonNull(NPCClasses.getByIdentifier(animation.npcClass())));
-        playerModel.moveTo(player.position(), player.yHeadRot, player.getXRot());
-        playerModel.setHideNameTag(!ModConfig.getInstance().showPlayerName);
-        playerModel.setCustomName(player.getDisplayName());
-        playerModel.setCustomNameVisible(ModConfig.getInstance().showPlayerName);
-        //playerModel.getVariationAspects().add("");
-
-        for (EquipmentSlot slot : EquipmentSlot.values()) {
-            var item = player.getItemBySlot(slot);
-            playerModel.setItemSlot(slot, item);
-        }
-
-        playerModel.setItemInHand(InteractionHand.MAIN_HAND, player.getMainHandItem());
-        playerModel.setItemInHand(InteractionHand.OFF_HAND, player.getOffhandItem());
-
-        playerModel.setXRot(player.getXRot());
-        playerModel.setYHeadRot(player.yHeadRot);
-        playerModel.setYBodyRot(player.yHeadRot);
-
-        if (data != null) {
-            playerModel.getEntityData().set(NPCEntity.Companion.getNPC_PLAYER_TEXTURE(), data.texture());
-            playerModel.getData().setDirectly("player_texture_username", new StringValue(player.getScoreboardName()));
-            playerModel.getAppliedAspects().add(data.modelAspect());
-            playerModel.updateAspects();
-        }
-
         EmoteEvents.START_EMOTE.invoker().onStartEmote(player);
 
-        GestureCameraHolder gestureCameraHolder = new GestureCameraHolder(player, playerModel);
+        GestureCameraHolder gestureCameraHolder = new GestureCameraHolder(player);
+        gestureCameraHolder.addElement(new NpcElement(animation, data, player.getYRot()));
+
         GestureController.GESTURE_CAMS.put(player.getUUID(), gestureCameraHolder);
         ChunkAttachment.ofTicking(gestureCameraHolder, player.serverLevel(), player.position());
-
-        player.serverLevel().addFreshEntity(playerModel);
-
-        CompletableFuture.runAsync(() -> playerModel.playAnimation(animation.animationName(), List.of()), CompletableFuture.delayedExecutor(50, TimeUnit.MILLISECONDS, player.server));
 
         CompletableFuture.runAsync(() -> {
             if (GestureController.GESTURE_CAMS.containsValue(gestureCameraHolder))

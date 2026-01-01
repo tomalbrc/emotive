@@ -1,6 +1,5 @@
 package com.cobblemonislands.emotive.impl;
 
-import com.cobblemon.mod.common.entity.npc.NPCEntity;
 import com.mojang.math.Axis;
 import eu.pb4.polymer.virtualentity.api.ElementHolder;
 import eu.pb4.polymer.virtualentity.api.VirtualEntityUtils;
@@ -38,7 +37,6 @@ public class GestureCameraHolder extends ElementHolder {
 
     private final ServerPlayer player;
     private final Vec3 origin;
-    private final NPCEntity playerModel;
 
     private float pitch;
     private float yaw;
@@ -46,14 +44,13 @@ public class GestureCameraHolder extends ElementHolder {
 
     private int age = 0;
 
-    public GestureCameraHolder(ServerPlayer player, NPCEntity playerModel) {
+    public GestureCameraHolder(ServerPlayer player) {
         super();
 
-        this.playerModel = playerModel;
         this.origin = player.position();
         this.player = player;
         this.updatePos();
-        this.cameraElement.setTeleportDuration(8);
+        this.cameraElement.setTeleportDuration(0);
         this.cameraElement.ignorePositionUpdates();
         this.addElement(cameraElement);
     }
@@ -109,7 +106,7 @@ public class GestureCameraHolder extends ElementHolder {
             this.updatePos();
         }
 
-        if (age >= 8) {
+        if (age >= 2) {
             this.cameraElement.setTeleportDuration(2);
         }
 
@@ -119,8 +116,6 @@ public class GestureCameraHolder extends ElementHolder {
     @Override
     public void destroy() {
         super.destroy();
-
-        this.playerModel.discard();
     }
 
     private void updatePos() {
@@ -146,10 +141,6 @@ public class GestureCameraHolder extends ElementHolder {
 
         Vector3f off = this.origin.toVector3f().add(0, this.player.getEyeHeight()/2.f, 0);
         return new Vector3f(0, 0, dist).rotate(yr.mul(xr)).add(off);
-    }
-
-    public NPCEntity getPlayerModel() {
-        return playerModel;
     }
 
     public ServerPlayer getPlayer() {

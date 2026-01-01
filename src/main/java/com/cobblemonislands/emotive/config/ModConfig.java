@@ -168,6 +168,7 @@ public class ModConfig {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+
             return true;
         }
 
