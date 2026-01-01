@@ -1,5 +1,6 @@
 package com.cobblemonislands.emotive.hud;
 
+import com.cobblemonislands.emotive.config.Animations;
 import com.cobblemonislands.emotive.config.ModConfig;
 import com.cobblemonislands.emotive.impl.GestureController;
 import com.cobblemonislands.emotive.impl.PlayerModelRegistry;
@@ -12,8 +13,7 @@ import eu.pb4.polymer.virtualentity.api.elements.TextDisplayElement;
 import eu.pb4.polymer.virtualentity.api.elements.VirtualElement;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import eu.pb4.sgui.api.gui.HotbarGui;
-import net.fabricmc.loader.impl.util.StringUtil;
-import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.util.Brightness;
@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutionException;
 
 public class HudHolder extends ElementHolder {
     ServerPlayer player;
+    Vec3 oldPlayerPos;
     List<String> availableAnimations;
 
     HotbarGui gui;
@@ -48,6 +49,7 @@ public class HudHolder extends ElementHolder {
 
         this.availableAnimations = availableAnimations;
         this.player = player;
+        this.oldPlayerPos = player.position();
 
         this.gui = new HotbarGui(player) {
             @Override
@@ -70,9 +72,9 @@ public class HudHolder extends ElementHolder {
         };
 
         for (int i = 0; i < availableAnimations.size(); i++) {
-            this.gui.setSlot(i, GuiElementBuilder.from(Items.PLAYER_HEAD.getDefaultInstance()).setSkullOwner(player.getScoreboardName()).setName(Component.literal(
-                    StringUtil.capitalize(PlayerModelRegistry.getAnimations().get(i))
-            )));
+            var id = ResourceLocation.parse(availableAnimations.get(i));
+            var anim = Animations.all().get(id);
+            this.gui.setSlot(i, GuiElementBuilder.from(Items.PLAYER_HEAD.getDefaultInstance()).setSkullOwner(player.getGameProfile(), player.server).setName(TextUtil.parse(anim.title())));
 
             TextDisplayElement element = new TextDisplayElement(TextUtil.parse(iconText(i)));
             element.setBrightness(Brightness.FULL_BRIGHT);
@@ -144,7 +146,7 @@ public class HudHolder extends ElementHolder {
     }
 
     protected boolean hasInput() {
-        return this.player.isShiftKeyDown() || this.player.xxa != 0 || this.player.zza != 0 || this.player.yya != 0 || this.player.jumping;
+        return !this.player.position().equals(oldPlayerPos) || this.player.isShiftKeyDown() || this.player.xxa != 0 || this.player.zza != 0 || this.player.yya != 0 || this.player.jumping;
     }
 
     protected void layout(int index) {
@@ -186,7 +188,10 @@ public class HudHolder extends ElementHolder {
     }
 
     protected String iconText(int i) {
-        return "\n<font:emotive:emotes>" + EmoteFont.ANIMATION_ICONS.get(availableAnimations.get(i)) + "</font>\n\n";
+        return "\n<font:emotive:emotes>" + EmoteFont.ANIMATION_ICONS.get(Animations.all().get(ResourceLocation.parse(availableAnimations.get(i))).animationName()) + "</font>\n\n";
+    }
+    protected String iconEmpty() {
+        return "\n<font:emotive:emotes>\uE200\n\n";
     }
 
     //protected Component labelText(int index) {
@@ -211,19 +216,13 @@ public class HudHolder extends ElementHolder {
         this.slot = s;
         for (int i = 0; i < this.textDisplayElementList.size(); i++) {
             if (slot == i) {
-                this.textDisplayElementList.get(i).setText(TextUtil.parse("<white>" + iconText(i)));
-                //this.textDisplayElementList.get(i).setText(Component.empty());
-                //this.textDisplayElementList.get(i).setBackground(0x00_000000);
-                this.textDisplayElementList.get(i).setTextOpacity((byte)0);
+                this.textDisplayElementList.get(i).setText(TextUtil.parse("<white>" + iconEmpty()));
                 this.textDisplayElementList.get(i).setBackground(0xFF_80bf80);
-                //this.labels.get(i).setBackground(0xff_101010);
-                //this.labels.get(i).setBackground(0xFF_508f50);
+                this.textDisplayElementList.get(i).setTextOpacity((byte)0);
             } else {
-                this.textDisplayElementList.get(i).setTextOpacity((byte)255);
                 this.textDisplayElementList.get(i).setText(TextUtil.parse("<gray>" + iconText(i)));
                 this.textDisplayElementList.get(i).setBackground(0xff_101010);
-                //this.labels.get(i).setBackground(0xff_101010);
-                //this.labels.get(i).setBackground(0xff_202020);
+                this.textDisplayElementList.get(i).setTextOpacity((byte)255);
             }
         }
 

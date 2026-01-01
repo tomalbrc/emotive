@@ -68,10 +68,8 @@ class HudPlayerModelHolder extends PositionedHolder {
     }
 
     public void playAnimationLoop(String name) {
-        this.getAnimator().playAnimation(name, (p) -> {
-            if (active) Objects.requireNonNull(CobblemonFabric.INSTANCE.server()).execute(() -> {
-                playAnimationLoop(name);
-            });
+        this.getAnimator().playAnimation(name, () -> {
+            if (active) Objects.requireNonNull(CobblemonFabric.INSTANCE.server()).execute(() -> playAnimationLoop(name));
         });
     }
 

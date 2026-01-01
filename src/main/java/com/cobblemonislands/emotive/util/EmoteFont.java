@@ -1,6 +1,7 @@
 package com.cobblemonislands.emotive.util;
 
 import com.cobblemonislands.emotive.Emotive;
+import com.cobblemonislands.emotive.config.ModConfig;
 import com.cobblemonislands.emotive.impl.PlayerModelRegistry;
 import com.cobblemonislands.emotive.newpolymer.BitmapProvider;
 import com.cobblemonislands.emotive.newpolymer.FontAsset;
@@ -17,19 +18,27 @@ import java.util.Objects;
 
 public class EmoteFont {
     static byte[] DEFAULT_ICON;
+    static byte[] BLANK_ICON;
 
     public static final Map<String, String> ANIMATION_ICONS = new HashMap<>();
 
     static {
         try {
             DEFAULT_ICON = Objects.requireNonNull(Emotive.class.getResourceAsStream("/default-emote-icon.png")).readAllBytes();
+            BLANK_ICON = Objects.requireNonNull(Emotive.class.getResourceAsStream("/blank-emote-icon.png")).readAllBytes();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     public static void createFont(ResourcePackBuilder resourcePackBuilder) {
+        if (!ModConfig.getInstance().fancyHud)
+            return;
+
         var fontAssetBuilder = FontAsset.builder();
+        fontAssetBuilder.add(BitmapProvider.builder(Util.id("font/blank-emote-icon")).height(32).ascent(16).chars(String.valueOf((char) (0xE200))));
+        resourcePackBuilder.addData(AssetPaths.texture(Util.id("font/blank-emote-icon")), BLANK_ICON);
+
         var animations = PlayerModelRegistry.getAnimations();
         for (int i = 0; i < animations.size(); i++) {
             var animation = animations.get(i);
@@ -47,7 +56,7 @@ public class EmoteFont {
     }
 
     private static byte[] getIcon(String iconName) {
-        try (var is = Emotive.class.getResourceAsStream("/model/danse/" + iconName + ".png")) {
+        try (var is = Emotive.class.getResourceAsStream("/model/emotive/" + iconName + ".png")) {
             if (is != null) {
                 try {
                     return is.readAllBytes();
@@ -55,7 +64,7 @@ public class EmoteFont {
                     return DEFAULT_ICON;
                 }
             } else {
-                var f = FabricLoader.getInstance().getConfigDir().resolve("danse/" + iconName);
+                var f = FabricLoader.getInstance().getConfigDir().resolve("emotive/models/" + iconName);
                 var file = f.toFile();
                 if (file.exists()) {
                     try (var stream = new FileInputStream(file)) {

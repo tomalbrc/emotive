@@ -39,7 +39,7 @@ public abstract class ServerGamePacketListenerImplMixin {
 
     @Inject(method = "handlePlayerAction", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;resetLastActionTime()V"), cancellable = true)
     private void emotive$handleAction(ServerboundPlayerActionPacket serverboundPlayerActionPacket, CallbackInfo ci) {
-        if (serverboundPlayerActionPacket.getAction() == ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND && player.isShiftKeyDown()) {
+        if (ModConfig.getInstance().fancyHud && serverboundPlayerActionPacket.getAction() == ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND && player.isShiftKeyDown()) {
             Emotive.openHud(player);
             ci.cancel();
         }

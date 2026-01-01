@@ -47,6 +47,9 @@ public class ModConfig {
     @SerializedName("messages")
     public Messages messages = new Messages();
 
+    @SerializedName("fancy-hud")
+    public boolean fancyHud = false;
+
     public Map<String, Integer> permissions = Map.of(
             "emotive.command", 2,
             "emotive.give", 2,

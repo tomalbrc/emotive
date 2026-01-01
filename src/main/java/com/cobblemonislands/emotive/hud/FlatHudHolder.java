@@ -16,7 +16,7 @@ public class FlatHudHolder extends HudHolder {
     }
 
     protected void layout(int index) {
-        final float spacingX = 0.3f;
+        final float spacingX = 0.295f;
         final float spacingY = 0.3525f;
         final float baseZ = -1.0f;
         final float selectedZ = -0.9f;
